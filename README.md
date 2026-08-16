@@ -1,4 +1,4 @@
-# US Geography Trainer
+# Learn the US, for real!
 
 A browser game for learning the lower 48 states and the biggest US cities by
 clicking them on a map. No frameworks, no build step and nothing loaded from a
@@ -13,8 +13,24 @@ by the Front Range or Iowa by the two rivers bracketing it. You're asked for one
 state at a time; click where you think it is, and its border is drawn in when
 you get it right. Finish all 48 to fill in the map.
 
-The **Terrain** button turns the relief, rivers and lakes off if you want the
-bare silhouette instead. The setting sticks.
+Every feature is **labelled all the time** — Rocky Mountains, Great Plains,
+Mississippi R., Colorado Plateau, Lake Superior and the rest — so you learn the
+landmarks while you play. Tier one shows at a glance; smaller plateaus, lakes
+and rivers appear as you zoom, and peaks and capes deeper still.
+
+The **Terrain** button turns the whole geography layer — relief, rivers, lakes
+and labels — off if you want the bare silhouette instead. The setting sticks.
+
+## Hard mode
+
+Answered states normally stay lit up in green with their abbreviation, which
+quickly becomes a crutch for finding the next one. Turn on **Hard mode** on the
+title screen and a correct answer settles into the map instead: the highlight
+fades after half a second and no label is ever drawn, leaving only the border
+baked in. A missed answer holds its red for a little longer before fading, since
+that reveal is the lesson. Cities behave the same way, fading to a plain dot.
+
+Hard mode keeps its own high scores, so an easier round can't hold the record.
 
 **Cities** — the state borders are drawn for you, and you place major cities by
 population. Pick the top 25, 50, 100 or 150.
@@ -67,6 +83,7 @@ js/game.js        question flow, scoring, streaks, menus and results
 data/states.js    48 state outlines, label anchors, and the national silhouette
 data/cities.js    150 cities with coordinates, state and population
 data/water.js     river centrelines and lake polygons
+data/features.js  named features: label anchor, angle and priority tier
 data/relief.png   shaded relief, pre-projected to match the map
 tools/build-*.mjs      regenerate the data files (only needed to change data)
 ```
@@ -111,4 +128,15 @@ node tools/build-data.mjs /tmp/states-10m.json /tmp/cities.csv
 
 ```bash
 node tools/build-relief.mjs --zoom 6 --width 1920
+node tools/build-features.mjs <dir-with-natural-earth-geojson>
 ```
+
+Feature labels are placed at draw time, not baked in: each one is measured,
+turned into a few small boxes along its baseline — a diagonal label like
+"Appalachian Mountains" covers a thin strip, and using its full bounding box
+would block half the east — and skipped if it collides with something already
+placed or runs off the canvas. Game labels claim their space first, then the
+headline features in a hand-ranked order, so losing the Appalachians to
+"Coastal Plain" can't happen. `build-features.mjs` also keeps a simplified
+polygon for each region, so a future mode can ask you to find the Rockies
+rather than just read the name.

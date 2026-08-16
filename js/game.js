@@ -60,6 +60,7 @@
     missed: [],
     streak: 0,
     bestStreak: 0,
+    hard: false,
     startedAt: 0,
     running: false,
   };
@@ -117,7 +118,11 @@
   }
 
   function bestKey() {
-    return 'usgeo.best.' + game.mode + (game.mode === 'cities' ? '.' + game.citySize : '');
+    return (
+      'usgeo.best.' + game.mode +
+      (game.mode === 'cities' ? '.' + game.citySize : '') +
+      (game.hard ? '.hard' : '')
+    );
   }
 
   function readBest() {
@@ -258,7 +263,7 @@
       el.streak.classList.add('hit');
     }
 
-    map.solved[labelOf(item)] = true;
+    map.solved[labelOf(item)] = performance.now();
     map.addMarker(x, y, 'hit');
     map.addReveal(game.mode === 'states' ? item.name : item.state, 'hit');
 
@@ -283,7 +288,7 @@
       return;
     }
     game.streak = 0;
-    map.missed[labelOf(item)] = true;
+    map.missed[labelOf(item)] = performance.now();
     game.missed.push(labelOf(item));
     map.addReveal(game.mode === 'states' ? item.name : item.state, 'miss');
     say(
@@ -391,57 +396,66 @@
     el.overlay.classList.remove('show');
   }
 
-  function showOverlay(html) {
+  function showOverlay(html, isTitle) {
+    el.panel.className = isTitle ? 'titlecard' : 'panel';
     el.panel.innerHTML = html;
+    el.overlay.classList.toggle('title-mode', !!isTitle);
     el.overlay.classList.add('show');
   }
 
-  function showMenu() {
+  function showTitle() {
     game.running = false;
     var isCities = game.mode === 'cities';
     var best = readBest();
+
     var sizeChips = CITY_SIZES.map(function (n) {
       return (
-        '<button class="chip' +
-        (n === game.citySize ? ' is-on' : '') +
-        '" data-size="' +
-        n +
-        '">Top ' +
-        n +
-        '</button>'
+        '<button class="chip' + (n === game.citySize ? ' is-on' : '') +
+        '" data-size="' + n + '">Top ' + n + '</button>'
       );
     }).join('');
 
     showOverlay(
-      '<h2>' +
-        (isCities ? 'Major cities' : 'The lower 48') +
-        '</h2>' +
-        '<p>' +
+      '<canvas class="hero-mark" id="heroMark"></canvas>' +
+        '<p class="eyebrow">Geography trainer</p>' +
+        '<h2 class="title">Learn the US, <em>for real!</em></h2>' +
+        '<hr class="title-rule">' +
+        '<p class="tagline">No state lines to trace — just terrain, rivers and coast, the way the ' +
+        'country actually looks. Find each place by its geography and the borders fill in behind you.</p>' +
+        '<div class="mode-cards" id="modeCards">' +
+        '<button class="mode-card' + (isCities ? '' : ' is-on') + '" data-mode="states">' +
+        '<b>The lower 48</b><span>Every state on a blank map, three tries each</span></button>' +
+        '<button class="mode-card' + (isCities ? ' is-on' : '') + '" data-mode="cities">' +
+        '<b>Major cities</b><span>Place the biggest cities, borders shown</span></button>' +
+        '</div>' +
+        '<div class="setup">' +
         (isCities
-          ? 'State borders are drawn for you. Click the spot where each city sits.'
-          : 'A blank silhouette — no state lines. Click the state being asked for, and its border is drawn in when you get it.') +
-        '</p>' +
-        '<ol>' +
-        '<li>Three tries per question: 3 points on the first, 2 on the second, 1 on the third.</li>' +
-        '<li>Every wrong click tells you how far off you were, and after two misses which way to look.</li>' +
-        '<li>Miss all three and the answer is revealed in red.</li>' +
-        '<li>Get them right first time back to back for a streak — 3, 5, 8, 12 and up each pay a bonus.</li>' +
-        '</ol>' +
-        (isCities
-          ? '<span class="choice-label">How many cities</span><div class="choices" id="sizes">' +
-            sizeChips +
-            '</div>'
+          ? '<span class="choice-label">How many</span><span id="sizes" class="choices" style="margin:0">' +
+            sizeChips + '</span>'
           : '') +
+        '<button class="switch' + (game.hard ? ' is-on' : '') + '" id="hardBtn" ' +
+        'role="switch" aria-checked="' + (game.hard ? 'true' : 'false') + '" ' +
+        'title="Answers settle into the map instead of staying lit">' +
+        '<span class="track"></span>Hard mode</button>' +
+        '</div>' +
+        '<button class="btn btn-start" id="playBtn">Start</button>' +
+        '<p class="title-foot">' +
         (best
-          ? '<p>Your best: <b>' +
-            best.score +
-            '</b> points in ' +
-            fmtTime(best.ms) +
-            (best.streak ? ' &middot; longest streak <b>' + best.streak + '</b>' : '') +
-            '.</p>'
-          : '') +
-        '<div class="btn-row"><button class="btn" id="playBtn">Start</button></div>'
+          ? 'Your best &middot; <b>' + best.score + '</b> points in ' + fmtTime(best.ms) +
+            (best.streak ? ' &middot; longest streak <b>' + best.streak + '</b>' : '')
+          : 'Three tries a question. First-try answers in a row build a streak.') +
+        '</p>',
+      true
     );
+
+    map.drawMark(document.getElementById('heroMark'), '#e2b558');
+
+    document.getElementById('modeCards').addEventListener('click', function (ev) {
+      var b = ev.target.closest('.mode-card');
+      if (!b) return;
+      setMode(b.dataset.mode);
+      showTitle();
+    });
 
     var sizes = document.getElementById('sizes');
     if (sizes) {
@@ -449,9 +463,15 @@
         var b = ev.target.closest('.chip');
         if (!b) return;
         game.citySize = parseInt(b.dataset.size, 10);
-        showMenu();
+        showTitle();
       });
     }
+
+    document.getElementById('hardBtn').addEventListener('click', function () {
+      setHard(!game.hard);
+      showTitle();
+    });
+
     document.getElementById('playBtn').addEventListener('click', function () {
       startRound(null);
     });
@@ -510,24 +530,39 @@
         startRound(list);
       });
     }
-    document.getElementById('backBtn').addEventListener('click', showMenu);
+    document.getElementById('backBtn').addEventListener('click', showTitle);
   }
 
   /* ---- chrome ------------------------------------------------------- */
 
+  function setMode(mode) {
+    game.mode = mode;
+    Array.prototype.forEach.call(el.modes.children, function (c) {
+      c.classList.toggle('is-on', c.dataset.mode === mode);
+    });
+    map.mode = mode;
+    map.solved = {};
+    map.missed = {};
+    map.activeCities = mode === 'cities' ? map.cities.slice(0, game.citySize) : [];
+    map.requestDraw();
+  }
+
+  function setHard(on) {
+    game.hard = on;
+    map.hardMode = on;
+    try {
+      localStorage.setItem('usgeo.hard', on ? '1' : '0');
+    } catch (e) {
+      /* not fatal */
+    }
+    map.requestDraw();
+  }
+
   el.modes.addEventListener('click', function (ev) {
     var b = ev.target.closest('.mode-btn');
     if (!b) return;
-    game.mode = b.dataset.mode;
-    Array.prototype.forEach.call(el.modes.children, function (c) {
-      c.classList.toggle('is-on', c === b);
-    });
-    map.mode = game.mode;
-    map.solved = {};
-    map.missed = {};
-    map.activeCities = game.mode === 'cities' ? map.cities.slice(0, game.citySize) : [];
-    map.requestDraw();
-    showMenu();
+    setMode(b.dataset.mode);
+    showTitle();
   });
 
   el.resetView.addEventListener('click', function () {
@@ -558,13 +593,21 @@
   }
   setTerrain(savedTerrain !== '0');
 
-  el.menuBtn.addEventListener('click', showMenu);
+  var savedHard = null;
+  try {
+    savedHard = localStorage.getItem('usgeo.hard');
+  } catch (e) {
+    /* not fatal */
+  }
+  setHard(savedHard === '1');
+
+  el.menuBtn.addEventListener('click', showTitle);
   el.restartBtn.addEventListener('click', function () {
     startRound(null);
   });
 
   document.addEventListener('keydown', function (ev) {
-    if (ev.key === 'Escape') showMenu();
+    if (ev.key === 'Escape') showTitle();
   });
 
   // Single ticker for the whole session; it idles when no round is running.
@@ -573,5 +616,5 @@
   }, 250);
 
   map.watchSize();
-  showMenu();
+  showTitle();
 })();

@@ -69,7 +69,22 @@
       });
     });
 
+    // Named physical features. Projected once; the label anchor and the angle
+    // the type is set at both come from the build script.
+    this.features = (window.US_FEATURES || []).map(function (f) {
+      var p = window.Geo.project(f.at[0], f.at[1]);
+      return {
+        kind: f.kind,
+        name: f.name,
+        x: p[0],
+        y: p[1],
+        angle: (f.angle || 0) * (Math.PI / 180),
+        tier: f.tier,
+      };
+    });
+
     this.terrain = true;
+    this.hardMode = false;
     this.reliefReady = false;
     if (window.US_RELIEF) {
       var self = this;
@@ -407,6 +422,193 @@
     ctx.restore();
   };
 
+  /*
+   * The title screen's emblem: the country drawn as line art, straight from
+   * the same outline the game uses. Costs nothing extra to ship.
+   */
+  MapView.prototype.drawMark = function (canvas, color) {
+    var dpr = window.devicePixelRatio || 1;
+    var rect = canvas.getBoundingClientRect();
+    var w = rect.width || 300;
+    var h = rect.height || 190;
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    var ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    var b = this.bounds;
+    var pad = 6;
+    var k = Math.min((w - pad * 2) / (b.x1 - b.x0), (h - pad * 2) / (b.y1 - b.y0));
+    var tx = (w - (b.x1 - b.x0) * k) / 2 - b.x0 * k;
+    var ty = (h - (b.y1 - b.y0) * k) / 2 - b.y0 * k;
+
+    ctx.beginPath();
+    for (var i = 0; i < this.outline.length; i++) {
+      var line = this.outline[i];
+      for (var j = 0; j < line.length; j++) {
+        var x = line[j][0] * k + tx;
+        var y = line[j][1] * k + ty;
+        if (j === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+    }
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 12;
+    ctx.globalAlpha = 0.55;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+    ctx.stroke();
+  };
+
+  /* ---- feature labels ------------------------------------------------ */
+
+  var LABEL_STYLE = {
+    range: { color: '--label-land', caps: true, track: 1.6, size: 11, italic: false },
+    desert: { color: '--label-land', caps: true, track: 1.6, size: 10.5, italic: false },
+    plain: { color: '--label-land', caps: true, track: 2.2, size: 10.5, italic: false },
+    river: { color: '--label-water', caps: false, track: 0.3, size: 10.5, italic: true },
+    lake: { color: '--label-water', caps: false, track: 0.3, size: 10.5, italic: true },
+    sea: { color: '--label-water', caps: true, track: 2, size: 10.5, italic: true },
+    peak: { color: '--label-peak', caps: false, track: 0, size: 10, italic: false, marker: 'peak' },
+    low: { color: '--label-peak', caps: false, track: 0, size: 10, italic: false, marker: 'peak' },
+    cape: { color: '--label-peak', caps: false, track: 0, size: 10, italic: false, marker: 'dot' },
+  };
+
+  /* Tier 1 is always legible; the rest earn their place as you zoom in. */
+  function tierVisible(tier, scale) {
+    if (tier === 1) return true;
+    if (tier === 2) return scale >= 1.45;
+    return scale >= 2.4;
+  }
+
+  function overlaps(box, placed) {
+    for (var i = 0; i < placed.length; i++) {
+      var p = placed[i];
+      if (box.x0 < p.x1 && box.x1 > p.x0 && box.y0 < p.y1 && box.y1 > p.y0) return true;
+    }
+    return false;
+  }
+
+/*
+ * A diagonal label covers a thin strip, but its axis-aligned bounds cover a
+ * big square — which would block every neighbour. Approximating the strip with
+ * a few small boxes along the baseline keeps the map much fuller.
+ */
+  function labelBoxes(cx, cy, w, h, angle) {
+    var n = Math.max(1, Math.round(w / 22));
+    var chunk = w / n;
+    var ca = Math.cos(angle);
+    var sa = Math.sin(angle);
+    var bw = (Math.abs(chunk * ca) + Math.abs(h * sa)) / 2;
+    var bh = (Math.abs(chunk * sa) + Math.abs(h * ca)) / 2;
+    var boxes = [];
+    for (var i = 0; i < n; i++) {
+      var d = -w / 2 + chunk * (i + 0.5);
+      var px = cx + d * ca;
+      var py = cy + d * sa;
+      boxes.push({ x0: px - bw, x1: px + bw, y0: py - bh, y1: py + bh });
+    }
+    return boxes;
+  }
+
+  function anyOverlap(boxes, placed) {
+    for (var i = 0; i < boxes.length; i++) {
+      if (overlaps(boxes[i], placed)) return true;
+    }
+    return false;
+  }
+
+  function boundsOf(boxes) {
+    var b = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+    for (var i = 0; i < boxes.length; i++) {
+      b.x0 = Math.min(b.x0, boxes[i].x0);
+      b.y0 = Math.min(b.y0, boxes[i].y0);
+      b.x1 = Math.max(b.x1, boxes[i].x1);
+      b.y1 = Math.max(b.y1, boxes[i].y1);
+    }
+    return b;
+  }
+
+  MapView.prototype.drawFeatureLabels = function (ctx, placed) {
+    if (!this.features.length) return;
+    var scale = this.view.s;
+    var halo = this.css('--label-halo');
+
+    for (var i = 0; i < this.features.length; i++) {
+      var f = this.features[i];
+      if (!tierVisible(f.tier, scale)) continue;
+
+      var st = LABEL_STYLE[f.kind];
+      if (!st) continue;
+      var x = this.sx(f.x);
+      var y = this.sy(f.y);
+      if (x < -60 || y < -30 || x > this.w + 60 || y > this.h + 30) continue;
+
+      var text = st.caps ? f.name.toUpperCase() : f.name;
+      ctx.save();
+      ctx.font =
+        (st.italic ? 'italic ' : '') + (st.caps ? '600 ' : '500 ') + st.size + 'px system-ui, sans-serif';
+      if ('letterSpacing' in ctx) ctx.letterSpacing = st.track + 'px';
+
+      var w = ctx.measureText(text).width;
+      var boxes = labelBoxes(x, y, w + 4, st.size + 4, f.angle);
+      var span = boundsOf(boxes);
+      // A label that runs off the canvas is worse than no label at all.
+      if (span.x0 < 2 || span.y0 < 2 || span.x1 > this.w - 2 || span.y1 > this.h - 2) {
+        ctx.restore();
+        continue;
+      }
+      if (anyOverlap(boxes, placed)) {
+        ctx.restore();
+        continue;
+      }
+      placed.push.apply(placed, boxes);
+
+      ctx.translate(x, y);
+      if (f.angle) ctx.rotate(f.angle);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Halo first so type stays readable over relief and rivers.
+      ctx.lineWidth = 3;
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = halo;
+      ctx.strokeText(text, 0, st.marker ? -7 : 0);
+      ctx.fillStyle = this.css(st.color);
+      ctx.fillText(text, 0, st.marker ? -7 : 0);
+
+      if (st.marker === 'peak') {
+        ctx.beginPath();
+        ctx.moveTo(0, 1);
+        ctx.lineTo(-3.5, 5);
+        ctx.lineTo(3.5, 5);
+        ctx.closePath();
+        ctx.fill();
+      } else if (st.marker === 'dot') {
+        ctx.beginPath();
+        ctx.arc(0, 3, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  };
+
+  /*
+   * Hard mode: an answered state stops glowing and settles into the map, so a
+   * filled-in neighbour is not a free hint. 1 while it holds, ramping to 0.
+   */
+  function fadeAlpha(t0, now, hold, dur) {
+    var age = now - t0;
+    if (age <= hold) return 1;
+    return Math.max(0, 1 - (age - hold) / dur);
+  }
+
   /* Returns true while an animation still needs frames. */
   MapView.prototype.draw = function () {
     if (!this.ready()) return false;
@@ -453,8 +655,19 @@
       var solved = this.mode === 'states' && this.solved[s.name];
       var missed = this.mode === 'states' && this.missed[s.name];
       if (solved || missed) {
-        ctx.fillStyle = solved ? LAND_SOLVED : LAND_MISSED;
-        ctx.fill(path, 'evenodd');
+        var a = 1;
+        if (this.hardMode) {
+          // A miss holds longer: that reveal is the whole lesson.
+          a = fadeAlpha(solved || missed, now, missed ? 2400 : 500, 900);
+          if (a > 0) live = true;
+        }
+        if (a > 0) {
+          ctx.save();
+          ctx.globalAlpha = a;
+          ctx.fillStyle = solved ? LAND_SOLVED : LAND_MISSED;
+          ctx.fill(path, 'evenodd');
+          ctx.restore();
+        }
       }
       if (showAllBorders || solved || missed) {
         ctx.strokeStyle = BORDER;
@@ -491,17 +704,24 @@
       ctx.restore();
     }
 
-    // Labels for states already placed.
-    if (this.mode === 'states') {
+    // Labels claim their space before the feature labels get a look in.
+    var placed = [];
+
+    // Abbreviations for states already placed — hard mode never shows them.
+    if (this.mode === 'states' && !this.hardMode) {
       ctx.save();
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = '600 ' + Math.max(9, Math.min(13, this.w / 70)) + 'px system-ui, sans-serif';
+      var absize = Math.max(9, Math.min(13, this.w / 70));
+      ctx.font = '600 ' + absize + 'px system-ui, sans-serif';
       for (i = 0; i < this.states.length; i++) {
         var ls = this.states[i];
         if (!this.solved[ls.name] && !this.missed[ls.name]) continue;
+        var lx = this.sx(ls.anchor[0]);
+        var ly = this.sy(ls.anchor[1]);
         ctx.fillStyle = this.missed[ls.name] ? BAD : INK;
-        ctx.fillText(ls.abbr, this.sx(ls.anchor[0]), this.sy(ls.anchor[1]));
+        ctx.fillText(ls.abbr, lx, ly);
+        placed.push({ x0: lx - 14, x1: lx + 14, y0: ly - 9, y1: ly + 9 });
       }
       ctx.restore();
     }
@@ -520,18 +740,33 @@
         var pr = window.Geo.project(c.lon, c.lat);
         var cx = this.sx(pr[0]);
         var cy = this.sy(pr[1]);
+        // Hard mode settles a placed city to a plain dot with no name.
+        var ca = 1;
+        if (this.hardMode) {
+          ca = fadeAlpha(done || miss, now, miss ? 2400 : 500, 900);
+          if (ca > 0) live = true;
+        }
+        ctx.save();
+        ctx.globalAlpha = this.hardMode ? 0.3 + 0.7 * ca : 1;
         ctx.fillStyle = miss ? BAD : GOOD;
         ctx.beginPath();
-        ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+        ctx.arc(cx, cy, this.hardMode ? 3 : 4, 0, Math.PI * 2);
         ctx.fill();
         ctx.strokeStyle = 'rgba(0,0,0,.55)';
         ctx.lineWidth = 1.5;
         ctx.stroke();
-        ctx.fillStyle = miss ? BAD : INK;
-        ctx.fillText(c.name, cx, cy - 6);
+        ctx.restore();
+        if (!this.hardMode) {
+          ctx.fillStyle = miss ? BAD : INK;
+          ctx.fillText(c.name, cx, cy - 6);
+          placed.push({ x0: cx - 30, x1: cx + 30, y0: cy - 18, y1: cy + 4 });
+        }
       }
       ctx.restore();
     }
+
+    // Named geography goes on last so it never gets painted over.
+    if (this.terrain) this.drawFeatureLabels(ctx, placed);
 
     // Click markers: a fading X for a miss, a ring for a hit.
     for (i = this.markers.length - 1; i >= 0; i--) {
