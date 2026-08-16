@@ -52,6 +52,35 @@
       });
     });
 
+    // Rivers and lakes, projected once like everything else.
+    this.rivers = (window.US_RIVERS || []).map(function (r) {
+      return {
+        rank: r.r,
+        pts: r.pts.map(function (pt) {
+          return window.Geo.project(pt[0], pt[1]);
+        }),
+      };
+    });
+    this.lakes = (window.US_LAKES || []).map(function (rings) {
+      return rings.map(function (ring) {
+        return ring.map(function (pt) {
+          return window.Geo.project(pt[0], pt[1]);
+        });
+      });
+    });
+
+    this.terrain = true;
+    this.reliefReady = false;
+    if (window.US_RELIEF) {
+      var self = this;
+      this.relief = new Image();
+      this.relief.onload = function () {
+        self.reliefReady = true;
+        self.requestDraw();
+      };
+      this.relief.src = window.US_RELIEF.src;
+    }
+
     this.cities = window.US_CITIES;
     this.bounds = this.computeBounds();
     this.k = 1;
@@ -304,6 +333,80 @@
     });
   };
 
+  /* ---- terrain ------------------------------------------------------ */
+
+  /*
+   * The relief is a greyscale image where 128 means flat, painted with a
+   * soft-light blend so it shades the land colour instead of replacing it.
+   */
+  MapView.prototype.drawRelief = function (ctx) {
+    if (!this.reliefReady) return;
+    var b = window.US_RELIEF.bounds;
+    ctx.save();
+    // Overlay rather than soft-light: against a land colour this dark,
+    // soft-light is almost invisible.
+    ctx.globalCompositeOperation = 'overlay';
+    ctx.globalAlpha = 1;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(
+      this.relief,
+      this.sx(b.x0),
+      this.sy(b.y0),
+      (b.x1 - b.x0) * this.k,
+      (b.y1 - b.y0) * this.k
+    );
+    ctx.restore();
+  };
+
+  MapView.prototype.drawRivers = function (ctx) {
+    if (!this.rivers.length) return;
+    ctx.save();
+    ctx.strokeStyle = this.css('--river');
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    // Two passes so the big rivers read heavier than the tributaries.
+    for (var pass = 0; pass < 2; pass++) {
+      ctx.lineWidth = pass === 0 ? 1.7 : 0.9;
+      ctx.globalAlpha = pass === 0 ? 0.85 : 0.5;
+      ctx.beginPath();
+      for (var i = 0; i < this.rivers.length; i++) {
+        var r = this.rivers[i];
+        var big = r.rank <= 4;
+        if ((pass === 0) !== big) continue;
+        for (var j = 0; j < r.pts.length; j++) {
+          var x = this.sx(r.pts[j][0]);
+          var y = this.sy(r.pts[j][1]);
+          if (j === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  };
+
+  MapView.prototype.drawLakes = function (ctx) {
+    if (!this.lakes.length) return;
+    var path = new Path2D();
+    for (var i = 0; i < this.lakes.length; i++) {
+      var rings = this.lakes[i];
+      for (var r = 0; r < rings.length; r++) {
+        var ring = rings[r];
+        for (var j = 0; j < ring.length; j++) {
+          var x = this.sx(ring[j][0]);
+          var y = this.sy(ring[j][1]);
+          if (j === 0) path.moveTo(x, y);
+          else path.lineTo(x, y);
+        }
+        path.closePath();
+      }
+    }
+    ctx.save();
+    ctx.fillStyle = this.css('--water');
+    ctx.fill(path, 'evenodd');
+    ctx.restore();
+  };
+
   /* Returns true while an animation still needs frames. */
   MapView.prototype.draw = function () {
     if (!this.ready()) return false;
@@ -326,8 +429,20 @@
     var i;
 
     // The landmass as one shape — no interior lines leak through.
+    var land = this.landPath();
     ctx.fillStyle = LAND;
-    ctx.fill(this.landPath(), 'evenodd');
+    ctx.fill(land, 'evenodd');
+
+    // Terrain goes on next, masked to the land so relief and rivers stop at
+    // the coast and the border instead of spilling into Canada and the sea.
+    if (this.terrain) {
+      ctx.save();
+      ctx.clip(land, 'evenodd');
+      this.drawRelief(ctx);
+      this.drawRivers(ctx);
+      ctx.restore();
+      this.drawLakes(ctx); // outside the clip: the Great Lakes are not land
+    }
 
     // Answered states get their own fill and border painted on top; in the
     // borderless mode this is the only way a state line ever appears.

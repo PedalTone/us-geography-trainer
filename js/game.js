@@ -5,6 +5,26 @@
   var MAX_TRIES = 3;
   var CITY_SIZES = [25, 50, 100, 150];
 
+  /*
+   * A streak counts answers got right on the FIRST try, back to back. Needing a
+   * second try keeps your points but ends the run, which is what makes a long
+   * streak worth something. Milestones pay a bonus on top.
+   */
+  var STREAK_REWARDS = [
+    { at: 3, label: '3 in a row', bonus: 2 },
+    { at: 5, label: '5 in a row!', bonus: 5 },
+    { at: 8, label: '8 straight!', bonus: 8 },
+    { at: 12, label: '12 in a row — on fire', bonus: 12 },
+    { at: 16, label: '16! Unstoppable', bonus: 16 },
+    { at: 20, label: '20 in a row!!', bonus: 20 },
+    { at: 25, label: '25 straight — incredible', bonus: 25 },
+    { at: 30, label: '30 in a row!!!', bonus: 30 },
+    { at: 40, label: '40 straight — showing off now', bonus: 40 },
+    { at: 48, label: 'ALL 48, FIRST TRY', bonus: 60 },
+    { at: 100, label: '100 in a row', bonus: 100 },
+    { at: 150, label: 'EVERY CITY, FIRST TRY', bonus: 150 },
+  ];
+
   var el = {
     canvas: document.getElementById('map'),
     prompt: document.getElementById('prompt'),
@@ -21,6 +41,10 @@
     menuBtn: document.getElementById('menuBtn'),
     restartBtn: document.getElementById('restartBtn'),
     resetView: document.getElementById('resetView'),
+    terrainBtn: document.getElementById('terrainBtn'),
+    streak: document.getElementById('streak'),
+    streakCount: document.getElementById('streakCount'),
+    toast: document.getElementById('toast'),
   };
 
   var map = new window.MapView(el.canvas);
@@ -34,6 +58,8 @@
     score: 0,
     firstTry: 0,
     missed: [],
+    streak: 0,
+    bestStreak: 0,
     startedAt: 0,
     running: false,
   };
@@ -67,6 +93,27 @@
   function say(text, tone) {
     el.feedback.textContent = text;
     el.feedback.className = 'feedback' + (tone ? ' ' + tone : '');
+  }
+
+  function rewardFor(streak) {
+    for (var i = 0; i < STREAK_REWARDS.length; i++) {
+      if (STREAK_REWARDS[i].at === streak) return STREAK_REWARDS[i];
+    }
+    return null;
+  }
+
+  function showToast(label, bonus) {
+    el.toast.innerHTML = '';
+    el.toast.appendChild(document.createTextNode(label));
+    if (bonus) {
+      var b = document.createElement('span');
+      b.className = 'bonus';
+      b.textContent = '+' + bonus;
+      el.toast.appendChild(b);
+    }
+    el.toast.classList.remove('show');
+    void el.toast.offsetWidth; // restart the animation on a repeat milestone
+    el.toast.classList.add('show');
   }
 
   function bestKey() {
@@ -118,6 +165,8 @@
     game.score = 0;
     game.firstTry = 0;
     game.missed = [];
+    game.streak = 0;
+    game.bestStreak = 0;
     game.startedAt = performance.now();
     game.running = true;
 
@@ -149,6 +198,8 @@
     el.progress.textContent = game.index;
     el.score.textContent = game.score;
     el.firstTry.textContent = game.firstTry;
+    el.streakCount.textContent = game.streak;
+    el.streak.classList.toggle('show', game.streak >= 2);
 
     el.tries.innerHTML = '';
     for (var i = 0; i < MAX_TRIES; i++) {
@@ -172,7 +223,17 @@
     var total = game.queue.length;
     var best = readBest();
     var isBest = !best || game.score > best.score || (game.score === best.score && elapsed < best.ms);
-    if (isBest) writeBest({ score: game.score, ms: elapsed, firstTry: game.firstTry });
+    if (isBest) {
+      writeBest({
+        score: game.score,
+        ms: elapsed,
+        firstTry: game.firstTry,
+        streak: Math.max(game.bestStreak, (best && best.streak) || 0),
+      });
+    } else if (best && game.bestStreak > (best.streak || 0)) {
+      best.streak = game.bestStreak;
+      writeBest(best);
+    }
 
     el.progress.textContent = total;
     showResults(elapsed, total, isBest, best);
@@ -182,8 +243,20 @@
 
   function onCorrect(item, x, y) {
     var earned = game.tries; // 3 / 2 / 1 by how many tries were left
+    var clean = game.tries === MAX_TRIES;
     game.score += earned;
-    if (game.tries === MAX_TRIES) game.firstTry++;
+    if (clean) game.firstTry++;
+
+    game.streak = clean ? game.streak + 1 : 0;
+    if (game.streak > game.bestStreak) game.bestStreak = game.streak;
+    var reward = clean ? rewardFor(game.streak) : null;
+    if (reward) {
+      game.score += reward.bonus;
+      showToast(reward.label, reward.bonus);
+      el.streak.classList.remove('hit');
+      void el.streak.offsetWidth; // restart the pulse
+      el.streak.classList.add('hit');
+    }
 
     map.solved[labelOf(item)] = true;
     map.addMarker(x, y, 'hit');
@@ -195,7 +268,10 @@
       game.mode === 'states'
         ? ' ' + item.name + ' locked in.'
         : ' ' + item.name + ', ' + item.state + '.';
-    say(praise + extra + ' +' + earned, 'good');
+    var tail = ' +' + earned;
+    if (reward) tail += ' and +' + reward.bonus + ' streak bonus';
+    else if (clean && game.streak >= 2) tail += ' · ' + game.streak + ' in a row';
+    say(praise + extra + tail, 'good');
     advance();
   }
 
@@ -206,6 +282,7 @@
       render();
       return;
     }
+    game.streak = 0;
     map.missed[labelOf(item)] = true;
     game.missed.push(labelOf(item));
     map.addReveal(game.mode === 'states' ? item.name : item.state, 'miss');
@@ -348,6 +425,7 @@
         '<li>Three tries per question: 3 points on the first, 2 on the second, 1 on the third.</li>' +
         '<li>Every wrong click tells you how far off you were, and after two misses which way to look.</li>' +
         '<li>Miss all three and the answer is revealed in red.</li>' +
+        '<li>Get them right first time back to back for a streak — 3, 5, 8, 12 and up each pay a bonus.</li>' +
         '</ol>' +
         (isCities
           ? '<span class="choice-label">How many cities</span><div class="choices" id="sizes">' +
@@ -359,6 +437,7 @@
             best.score +
             '</b> points in ' +
             fmtTime(best.ms) +
+            (best.streak ? ' &middot; longest streak <b>' + best.streak + '</b>' : '') +
             '.</p>'
           : '') +
         '<div class="btn-row"><button class="btn" id="playBtn">Start</button></div>'
@@ -379,7 +458,12 @@
   }
 
   function showResults(elapsed, total, isBest, prevBest) {
+    // A flawless run is 3 points per question plus every streak bonus it would
+    // pass through, so 100% means exactly that and nothing scores over it.
     var max = total * MAX_TRIES;
+    for (var m = 0; m < STREAK_REWARDS.length; m++) {
+      if (STREAK_REWARDS[m].at <= total) max += STREAK_REWARDS[m].bonus;
+    }
     var pct = Math.round((game.score / max) * 100);
     var missedHtml = game.missed.length
       ? '<span class="choice-label">Missed entirely</span><div class="misslist">' +
@@ -403,7 +487,7 @@
         '<div class="results">' +
         '<div class="result-cell"><span>Score</span><b>' + game.score + '</b></div>' +
         '<div class="result-cell"><span>First try</span><b>' + game.firstTry + '/' + total + '</b></div>' +
-        '<div class="result-cell"><span>Missed</span><b>' + game.missed.length + '</b></div>' +
+        '<div class="result-cell"><span>Best streak</span><b>' + game.bestStreak + '</b></div>' +
         '<div class="result-cell"><span>Time</span><b>' + fmtTime(elapsed) + '</b></div>' +
         '</div>' +
         missedHtml +
@@ -449,6 +533,30 @@
   el.resetView.addEventListener('click', function () {
     map.resetView();
   });
+
+  function setTerrain(on) {
+    map.terrain = on;
+    el.terrainBtn.classList.toggle('is-on', on);
+    el.terrainBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    try {
+      localStorage.setItem('usgeo.terrain', on ? '1' : '0');
+    } catch (e) {
+      /* not fatal */
+    }
+    map.requestDraw();
+  }
+
+  el.terrainBtn.addEventListener('click', function () {
+    setTerrain(!map.terrain);
+  });
+
+  var savedTerrain = null;
+  try {
+    savedTerrain = localStorage.getItem('usgeo.terrain');
+  } catch (e) {
+    /* not fatal */
+  }
+  setTerrain(savedTerrain !== '0');
 
   el.menuBtn.addEventListener('click', showMenu);
   el.restartBtn.addEventListener('click', function () {

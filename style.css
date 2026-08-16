@@ -6,12 +6,15 @@
   --ink-dim: #93a6ba;
   --line: rgba(255, 255, 255, .09);
 
-  /* Map colors are read by the canvas renderer. */
+  /* Map colors are read by the canvas renderer. The answer fills are
+     translucent so the terrain underneath still reads. */
   --land: #33475e;
-  --land-solved: #2c6b57;
-  --land-missed: #6a3140;
+  --land-solved: rgba(52, 190, 140, .40);
+  --land-missed: rgba(251, 113, 133, .34);
   --border-line: rgba(226, 240, 255, .38);
   --coast: rgba(151, 194, 232, .75);
+  --river: #7fb6e6;
+  --water: #16273a;
 
   --good: #4ade80;
   --bad: #fb7185;
@@ -59,6 +62,31 @@ body {
   letter-spacing: .02em;
   color: var(--ink-dim);
   margin: 0;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink-dim);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 13px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.toggle.is-on {
+  border-color: rgba(127, 182, 230, .55);
+  color: #a9d3f5;
+  background: rgba(127, 182, 230, .14);
 }
 
 .modes {
@@ -119,6 +147,38 @@ body {
   align-items: center;
   gap: 18px;
   flex: none;
+}
+
+/* ---- streak ---- */
+
+.streak {
+  display: none;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, .13);
+  border: 1px solid rgba(251, 191, 36, .3);
+  color: var(--warm);
+  font-variant-numeric: tabular-nums;
+}
+
+.streak.show { display: flex; }
+
+.streak .flame {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.streak b { font-size: 16px; }
+
+/* A milestone makes it pulse once. */
+.streak.hit { animation: streak-pop .5s ease-out; }
+
+@keyframes streak-pop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.28); background: rgba(251, 191, 36, .32); }
+  100% { transform: scale(1); }
 }
 
 .tries {
@@ -206,6 +266,50 @@ body {
 
 .reset-view.show { display: block; }
 .reset-view:hover { color: var(--ink); }
+
+/* ---- reward toast ---- */
+
+.toast {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  translate: -50% 0;
+  padding: 11px 22px;
+  border-radius: 13px;
+  background: linear-gradient(180deg, #fde68a, #f5b73d);
+  color: #3a2607;
+  font-size: clamp(16px, 2.6vw, 21px);
+  font-weight: 800;
+  letter-spacing: -.01em;
+  white-space: nowrap;
+  box-shadow: 0 12px 34px rgba(245, 183, 61, .3);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toast .bonus {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 7px;
+  background: rgba(58, 38, 7, .17);
+  font-size: .8em;
+}
+
+.toast.show { animation: toast-in 1.9s cubic-bezier(.2, .9, .3, 1) forwards; }
+
+@keyframes toast-in {
+  0%   { opacity: 0; transform: translateY(-14px) scale(.85); }
+  12%  { opacity: 1; transform: translateY(0) scale(1.06); }
+  22%  { transform: translateY(0) scale(1); }
+  78%  { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-10px) scale(.97); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast.show { animation: toast-fade 1.9s linear forwards; }
+  .streak.hit { animation: none; }
+  @keyframes toast-fade { 0%, 90% { opacity: 1; } 100% { opacity: 0; } }
+}
 
 /* ---- overlay panels ---- */
 

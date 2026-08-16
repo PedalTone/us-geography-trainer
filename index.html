@@ -11,10 +11,13 @@
 <div class="app">
   <header class="topbar">
     <h1>US Geography Trainer</h1>
-    <nav class="modes" id="modes">
-      <button class="mode-btn is-on" data-mode="states">States</button>
-      <button class="mode-btn" data-mode="cities">Cities</button>
-    </nav>
+    <div class="topbar-right">
+      <button class="toggle is-on" id="terrainBtn" title="Show rivers, lakes and shaded relief">Terrain</button>
+      <nav class="modes" id="modes">
+        <button class="mode-btn is-on" data-mode="states">States</button>
+        <button class="mode-btn" data-mode="cities">Cities</button>
+      </nav>
+    </div>
   </header>
 
   <section class="hud" id="hud">
@@ -23,6 +26,7 @@
       <span class="ask-target" id="prompt">—</span>
     </div>
     <div class="stats">
+      <div class="streak" id="streak" title="First-try answers in a row"><span class="flame">🔥</span><b id="streakCount">0</b></div>
       <div class="tries" id="tries" title="Tries left"></div>
       <div class="counter"><b id="progress">0</b><span id="progressTotal">/ 48</span></div>
     </div>
@@ -33,6 +37,7 @@
   <div class="mapwrap">
     <canvas id="map"></canvas>
     <button class="reset-view" id="resetView" title="Back to the whole map">Reset view</button>
+    <div class="toast" id="toast" aria-live="polite"></div>
 
     <div class="overlay" id="overlay">
       <div class="panel" id="panel"></div>
@@ -54,6 +59,8 @@
 
 <script src="data/states.js"></script>
 <script src="data/cities.js"></script>
+<script src="data/water.js"></script>
+<script src="data/relief.js"></script>
 <script src="js/geo.js"></script>
 <script src="js/map.js"></script>
 <script src="js/game.js"></script>
