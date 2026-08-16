@@ -18,7 +18,7 @@ Mississippi R., Colorado Plateau, Lake Superior and the rest — so you learn th
 landmarks while you play. Tier one shows at a glance; smaller plateaus, lakes
 and rivers appear as you zoom, and peaks and capes deeper still.
 
-The **Terrain** button turns the whole geography layer — relief, rivers, lakes
+The **Terrain** switch turns the whole geography layer — relief, rivers, lakes
 and labels — off if you want the bare silhouette instead. The setting sticks.
 
 ## Hard mode

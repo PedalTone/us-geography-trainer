@@ -440,7 +440,7 @@
         '<button class="switch' + (game.hard ? ' is-on' : '') + '" id="hardBtn" ' +
         'role="switch" aria-checked="' + (game.hard ? 'true' : 'false') + '" ' +
         'title="Answers fade away completely — no fill, border or name — so the map stays blank">' +
-        '<span class="track"></span>Hard mode</button>' +
+        '<span class="track"><span class="knob"></span></span>Hard mode</button>' +
         (game.hard
           ? '<span class="setup-note">Answers fade away — the map stays blank</span>'
           : '') +
@@ -579,7 +579,7 @@
   function setTerrain(on) {
     map.terrain = on;
     el.terrainBtn.classList.toggle('is-on', on);
-    el.terrainBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    el.terrainBtn.setAttribute('aria-checked', on ? 'true' : 'false');
     try {
       localStorage.setItem('usgeo.terrain', on ? '1' : '0');
     } catch (e) {

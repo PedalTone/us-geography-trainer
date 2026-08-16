@@ -76,25 +76,6 @@ body {
   gap: 8px;
 }
 
-.toggle {
-  appearance: none;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  color: var(--ink-dim);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 6px 13px;
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.toggle.is-on {
-  border-color: rgba(127, 182, 230, .55);
-  color: #a9d3f5;
-  background: rgba(127, 182, 230, .14);
-}
-
 .modes {
   display: flex;
   gap: 4px;
@@ -494,8 +475,9 @@ body {
   flex: none;
 }
 
-.switch .track::after {
-  content: "";
+/* The knob is its own element rather than a ::after, so it can be measured and
+   inspected directly — handy when checking the switch actually moved. */
+.switch .knob {
   position: absolute;
   top: 2px;
   left: 2px;
@@ -508,7 +490,28 @@ body {
 
 .switch.is-on { color: #f0d191; border-color: rgba(226, 181, 88, .55); }
 .switch.is-on .track { background: rgba(226, 181, 88, .42); }
-.switch.is-on .track::after { transform: translateX(14px); background: #f4e2bd; }
+.switch.is-on .knob { transform: translateX(14px); background: #f4e2bd; }
+
+.switch:hover { border-color: rgba(255, 255, 255, .22); }
+
+/* Top-bar variant: tighter, and blue to match the layer it controls. */
+.switch-cool {
+  padding: 5px 12px 5px 9px;
+  font-size: 13px;
+  background: var(--panel);
+}
+
+.switch-cool .track { width: 28px; height: 16px; }
+.switch-cool .knob { width: 12px; height: 12px; }
+
+.switch-cool.is-on {
+  color: #a9d3f5;
+  border-color: rgba(127, 182, 230, .55);
+  background: rgba(127, 182, 230, .14);
+}
+
+.switch-cool.is-on .track { background: rgba(127, 182, 230, .45); }
+.switch-cool.is-on .knob { transform: translateX(12px); background: #dff0ff; }
 
 /* Declared after .btn in source order, so it needs equal-or-higher specificity. */
 .btn.btn-start {
