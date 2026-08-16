@@ -1,9 +1,9 @@
 # US Geography Trainer
 
 A browser game for learning the lower 48 states and the biggest US cities by
-clicking them on a map. No frameworks, no build step, no network calls — just
-HTML, CSS and three plain JavaScript files, so it runs on GitHub Pages as-is
-(and by double-clicking `index.html`).
+clicking them on a map. No frameworks, no build step and nothing loaded from a
+third party — just HTML, CSS, three plain JavaScript files and its own map data,
+so it runs on GitHub Pages as-is.
 
 ## The two modes
 
@@ -42,13 +42,16 @@ flawless 48-state round is 362 points, which is exactly 100%.
 
 Best score, time and longest streak are kept per mode in `localStorage`.
 
+## Getting around the map
+
 Scroll to zoom, drag to pan, pinch on a touchscreen — useful for Rhode Island.
 Panning never costs you a try.
 
 ## Running it
 
 Open `index.html` in a browser. That's the whole story — the map data is
-committed as plain JS, so there's nothing to install or serve.
+committed as plain JS and the relief as a PNG beside it, so there's nothing to
+install or build.
 
 To publish: push to GitHub, then **Settings → Pages → Source: Deploy from a
 branch**, pick `main` and `/ (root)`.
