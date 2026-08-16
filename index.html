@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>US Geography Trainer</title>
+<meta name="description" content="Learn the lower 48 states and the biggest US cities by clicking them on a blank map.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <h1>US Geography Trainer</h1>
+    <nav class="modes" id="modes">
+      <button class="mode-btn is-on" data-mode="states">States</button>
+      <button class="mode-btn" data-mode="cities">Cities</button>
+    </nav>
+  </header>
+
+  <section class="hud" id="hud">
+    <div class="ask">
+      <span class="ask-label">Where is</span>
+      <span class="ask-target" id="prompt">—</span>
+    </div>
+    <div class="stats">
+      <div class="tries" id="tries" title="Tries left"></div>
+      <div class="counter"><b id="progress">0</b><span id="progressTotal">/ 48</span></div>
+    </div>
+  </section>
+
+  <div class="feedback" id="feedback">&nbsp;</div>
+
+  <div class="mapwrap">
+    <canvas id="map"></canvas>
+    <button class="reset-view" id="resetView" title="Back to the whole map">Reset view</button>
+
+    <div class="overlay" id="overlay">
+      <div class="panel" id="panel"></div>
+    </div>
+  </div>
+
+  <footer class="bottombar">
+    <div class="meters">
+      <span>Score <b id="score">0</b></span>
+      <span>First try <b id="firstTry">0</b></span>
+      <span>Time <b id="timer">0:00</b></span>
+    </div>
+    <div class="actions">
+      <button class="btn ghost" id="menuBtn">Menu</button>
+      <button class="btn ghost" id="restartBtn">Restart</button>
+    </div>
+  </footer>
+</div>
+
+<script src="data/states.js"></script>
+<script src="data/cities.js"></script>
+<script src="js/geo.js"></script>
+<script src="js/map.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
