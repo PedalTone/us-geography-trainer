@@ -72,6 +72,11 @@ install or build.
 To publish: push to GitHub, then **Settings → Pages → Source: Deploy from a
 branch**, pick `main` and `/ (root)`.
 
+GitHub Pages serves assets with a ten minute cache, so every script and
+stylesheet is referenced with a `?v=N` in `index.html` (and `relief.png` in
+`data/relief.js`). **Bump N whenever you deploy** or returning players keep
+running the old files.
+
 ## Layout
 
 ```

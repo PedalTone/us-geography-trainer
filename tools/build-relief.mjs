@@ -304,6 +304,6 @@ writeFileSync('data/relief.png', png);
 // relief drifts against the coastline.
 writeFileSync(
   'data/relief.js',
-  `window.US_RELIEF = ${JSON.stringify({ src: 'data/relief.png', bounds: BOUNDS })};\n`
+  `window.US_RELIEF = ${JSON.stringify({ src: 'data/relief.png?v=3', bounds: BOUNDS })};\n`
 );
 console.log(`wrote data/relief.png (${OUT_W}x${OUT_H}, ${(png.length / 1024).toFixed(0)} KB) and data/relief.js`);
