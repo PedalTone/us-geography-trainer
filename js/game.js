@@ -180,6 +180,7 @@
     map.missed = {};
     map.reveals = [];
     map.markers = [];
+    map.revealAll = false;
     if (game.mode === 'states') map.activeCities = [];
 
     hideOverlay();
@@ -224,6 +225,9 @@
 
   function finish() {
     game.running = false;
+    // Hard mode hides your work as you go; show the finished map for review.
+    map.revealAll = true;
+    map.requestDraw();
     var elapsed = performance.now() - game.startedAt;
     var total = game.queue.length;
     var best = readBest();
@@ -435,8 +439,11 @@
           : '') +
         '<button class="switch' + (game.hard ? ' is-on' : '') + '" id="hardBtn" ' +
         'role="switch" aria-checked="' + (game.hard ? 'true' : 'false') + '" ' +
-        'title="Answers settle into the map instead of staying lit">' +
+        'title="Answers fade away completely — no fill, border or name — so the map stays blank">' +
         '<span class="track"></span>Hard mode</button>' +
+        (game.hard
+          ? '<span class="setup-note">Answers fade away — the map stays blank</span>'
+          : '') +
         '</div>' +
         '<button class="btn btn-start" id="playBtn">Start</button>' +
         '<p class="title-foot">' +

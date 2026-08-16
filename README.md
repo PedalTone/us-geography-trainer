@@ -23,12 +23,17 @@ and labels — off if you want the bare silhouette instead. The setting sticks.
 
 ## Hard mode
 
-Answered states normally stay lit up in green with their abbreviation, which
-quickly becomes a crutch for finding the next one. Turn on **Hard mode** on the
-title screen and a correct answer settles into the map instead: the highlight
-fades after half a second and no label is ever drawn, leaving only the border
-baked in. A missed answer holds its red for a little longer before fading, since
-that reveal is the lesson. Cities behave the same way, fading to a plain dot.
+Answered states normally stay lit up in green with their border and
+abbreviation, which quickly becomes a crutch — once half the map is filled in,
+the remaining states are outlined for you. Turn on **Hard mode** on the title
+screen and a correct answer fades away completely: fill, border and name all go,
+about a second after you place it. The map stays blank for the whole round, so
+every question is answered from the geography alone. A missed answer holds its
+red reveal for a couple of seconds first, since that is the lesson. Cities fade
+away the same way.
+
+When the round ends the finished map is drawn in full — every state named, with
+the ones you missed in red — so you can still review what you did.
 
 Hard mode keeps its own high scores, so an easier round can't hold the record.
 

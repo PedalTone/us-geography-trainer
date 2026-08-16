@@ -85,6 +85,9 @@
 
     this.terrain = true;
     this.hardMode = false;
+    // Set when a round ends so the finished map can be reviewed in full, even
+    // though hard mode hid everything while playing.
+    this.revealAll = false;
     this.reliefReady = false;
     if (window.US_RELIEF) {
       var self = this;
@@ -600,8 +603,10 @@
   };
 
   /*
-   * Hard mode: an answered state stops glowing and settles into the map, so a
-   * filled-in neighbour is not a free hint. 1 while it holds, ramping to 0.
+   * Hard mode: an answered state is shown just long enough to see, then fades
+   * away completely — fill, border and name — so the map stays blank and a
+   * neighbour you already placed is never a free hint. 1 while it holds,
+   * ramping to 0.
    */
   function fadeAlpha(t0, now, hold, dur) {
     var age = now - t0;
@@ -654,25 +659,29 @@
       s._path = path;
       var solved = this.mode === 'states' && this.solved[s.name];
       var missed = this.mode === 'states' && this.missed[s.name];
-      if (solved || missed) {
-        var a = 1;
-        if (this.hardMode) {
-          // A miss holds longer: that reveal is the whole lesson.
-          a = fadeAlpha(solved || missed, now, missed ? 2400 : 500, 900);
-          if (a > 0) live = true;
-        }
-        if (a > 0) {
-          ctx.save();
-          ctx.globalAlpha = a;
-          ctx.fillStyle = solved ? LAND_SOLVED : LAND_MISSED;
-          ctx.fill(path, 'evenodd');
-          ctx.restore();
-        }
+      var hard = this.hardMode && !this.revealAll;
+      var a = 1;
+      if (hard && (solved || missed)) {
+        // A miss holds longer: that reveal is the whole lesson.
+        a = fadeAlpha(solved || missed, now, missed ? 2200 : 700, 1000);
+        if (a > 0) live = true;
       }
-      if (showAllBorders || solved || missed) {
+      if ((solved || missed) && a > 0) {
+        ctx.save();
+        ctx.globalAlpha = a;
+        ctx.fillStyle = solved ? LAND_SOLVED : LAND_MISSED;
+        ctx.fill(path, 'evenodd');
+        ctx.restore();
+      }
+      // In hard mode the border fades out with the fill: leaving it drawn would
+      // hand the player every neighbouring outline for free.
+      if (showAllBorders || ((solved || missed) && a > 0)) {
+        ctx.save();
+        ctx.globalAlpha = showAllBorders ? 1 : a;
         ctx.strokeStyle = BORDER;
         ctx.lineWidth = 1;
         ctx.stroke(path);
+        ctx.restore();
       }
     }
 
@@ -708,7 +717,7 @@
     var placed = [];
 
     // Abbreviations for states already placed — hard mode never shows them.
-    if (this.mode === 'states' && !this.hardMode) {
+    if (this.mode === 'states' && (!this.hardMode || this.revealAll)) {
       ctx.save();
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -741,22 +750,25 @@
         var cx = this.sx(pr[0]);
         var cy = this.sy(pr[1]);
         // Hard mode settles a placed city to a plain dot with no name.
+        var cityHard = this.hardMode && !this.revealAll;
         var ca = 1;
-        if (this.hardMode) {
-          ca = fadeAlpha(done || miss, now, miss ? 2400 : 500, 900);
+        if (cityHard) {
+          ca = fadeAlpha(done || miss, now, miss ? 2200 : 700, 1000);
           if (ca > 0) live = true;
         }
-        ctx.save();
-        ctx.globalAlpha = this.hardMode ? 0.3 + 0.7 * ca : 1;
-        ctx.fillStyle = miss ? BAD : GOOD;
-        ctx.beginPath();
-        ctx.arc(cx, cy, this.hardMode ? 3 : 4, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(0,0,0,.55)';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.restore();
-        if (!this.hardMode) {
+        if (ca > 0) {
+          ctx.save();
+          ctx.globalAlpha = ca;
+          ctx.fillStyle = miss ? BAD : GOOD;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(0,0,0,.55)';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.restore();
+        }
+        if (!cityHard) {
           ctx.fillStyle = miss ? BAD : INK;
           ctx.fillText(c.name, cx, cy - 6);
           placed.push({ x0: cx - 30, x1: cx + 30, y0: cy - 18, y1: cy + 4 });
