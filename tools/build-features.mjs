@@ -600,7 +600,7 @@ for (const m of MONUMENTS) {
     name: m.name,
     at: [round(m.lon), round(m.lat)],
     angle: 0,
-    tier: 2,
+    tier: 3,
   });
   monAdded++;
 }
