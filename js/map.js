@@ -491,6 +491,7 @@
    * the same outline the game uses. Costs nothing extra to ship.
    */
   MapView.prototype.drawMark = function (canvas, color) {
+    var self = this;
     var dpr = window.devicePixelRatio || 1;
     var rect = canvas.getBoundingClientRect();
     var w = rect.width || 300;
@@ -506,6 +507,21 @@
     var k = Math.min((w - pad * 2) / (b.x1 - b.x0), (h - pad * 2) / (b.y1 - b.y0));
     var tx = (w - (b.x1 - b.x0) * k) / 2 - b.x0 * k;
     var ty = (h - (b.y1 - b.y0) * k) / 2 - b.y0 * k;
+
+    // Draw the hypsometric tint (elevation colors) if available
+    if (this.hypsoReady && this.hypso) {
+      var bounds = window.US_RELIEF.bounds;
+      ctx.save();
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(
+        this.hypso,
+        bounds.x0 * k + tx,
+        bounds.y0 * k + ty,
+        (bounds.x1 - bounds.x0) * k,
+        (bounds.y1 - bounds.y0) * k
+      );
+      ctx.restore();
+    }
 
     ctx.beginPath();
     for (var i = 0; i < this.outline.length; i++) {
@@ -528,6 +544,16 @@
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
     ctx.stroke();
+
+    // Store for redraw when hypso loads
+    this.markCanvas = canvas;
+    this.markColor = color;
+    if (!this.hypsoReady && this.hypso) {
+      this.hypso.onload = function () {
+        self.hypsoReady = true;
+        self.drawMark(self.markCanvas, self.markColor);
+      };
+    }
   };
 
   /* ---- feature labels ------------------------------------------------ */
