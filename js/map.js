@@ -491,7 +491,6 @@
    * the same outline the game uses. Costs nothing extra to ship.
    */
   MapView.prototype.drawMark = function (canvas, color) {
-    var self = this;
     var dpr = window.devicePixelRatio || 1;
     var rect = canvas.getBoundingClientRect();
     var w = rect.width || 300;
@@ -508,48 +507,6 @@
     var tx = (w - (b.x1 - b.x0) * k) / 2 - b.x0 * k;
     var ty = (h - (b.y1 - b.y0) * k) / 2 - b.y0 * k;
 
-    // Create clipping path from the outline
-    ctx.beginPath();
-    for (var i = 0; i < this.outline.length; i++) {
-      var line = this.outline[i];
-      for (var j = 0; j < line.length; j++) {
-        var x = line[j][0] * k + tx;
-        var y = line[j][1] * k + ty;
-        if (j === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-    }
-    ctx.clip();
-
-    // Draw the full relief (hypso + hillshade) clipped to the border, just like the main map
-    if (this.hypsoReady && this.hypso) {
-      var bounds = window.US_RELIEF.bounds;
-      ctx.imageSmoothingQuality = 'high';
-      // Draw hypso (elevation colors)
-      ctx.drawImage(
-        this.hypso,
-        bounds.x0 * k + tx,
-        bounds.y0 * k + ty,
-        (bounds.x1 - bounds.x0) * k,
-        (bounds.y1 - bounds.y0) * k
-      );
-    }
-    if (this.reliefReady && this.relief) {
-      var bounds = window.US_RELIEF.bounds;
-      ctx.imageSmoothingQuality = 'high';
-      // Draw relief (shaded relief with overlay blend)
-      ctx.globalCompositeOperation = 'overlay';
-      ctx.drawImage(
-        this.relief,
-        bounds.x0 * k + tx,
-        bounds.y0 * k + ty,
-        (bounds.x1 - bounds.x0) * k,
-        (bounds.y1 - bounds.y0) * k
-      );
-      ctx.globalCompositeOperation = 'source-over';
-    }
-
-    // Draw outline stroke on top
     ctx.beginPath();
     for (var i = 0; i < this.outline.length; i++) {
       var line = this.outline[i];
@@ -571,22 +528,6 @@
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
     ctx.stroke();
-
-    // Store for redraw when images load
-    this.markCanvas = canvas;
-    this.markColor = color;
-    if (!this.hypsoReady && this.hypso) {
-      this.hypso.onload = function () {
-        self.hypsoReady = true;
-        self.drawMark(self.markCanvas, self.markColor);
-      };
-    }
-    if (!this.reliefReady && this.relief) {
-      this.relief.onload = function () {
-        self.reliefReady = true;
-        self.drawMark(self.markCanvas, self.markColor);
-      };
-    }
   };
 
   /* ---- feature labels ------------------------------------------------ */
