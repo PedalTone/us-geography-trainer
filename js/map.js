@@ -712,6 +712,7 @@
         ctx.fill();
       } else if (st.marker === 'flag') {
         // A flag for monuments — small pole and triangle.
+        var c = this.css(st.color);
         ctx.strokeStyle = c;
         ctx.fillStyle = c;
         ctx.lineWidth = 1;
