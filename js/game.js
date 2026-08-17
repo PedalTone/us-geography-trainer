@@ -95,6 +95,7 @@
     restartBtn: document.getElementById('restartBtn'),
     resetView: document.getElementById('resetView'),
     terrainBtn: document.getElementById('terrainBtn'),
+    peekBtn: document.getElementById('peekBtn'),
     streak: document.getElementById('streak'),
     streakCount: document.getElementById('streakCount'),
     toast: document.getElementById('toast'),
@@ -651,6 +652,22 @@
     setTerrain(!map.terrain);
   });
 
+  function setPeek(on) {
+    map.peek = on;
+    el.peekBtn.classList.toggle('is-on', on);
+    el.peekBtn.setAttribute('aria-checked', on ? 'true' : 'false');
+    try {
+      localStorage.setItem('usgeo.peek', on ? '1' : '0');
+    } catch (e) {
+      /* not fatal */
+    }
+    map.requestDraw();
+  }
+
+  el.peekBtn.addEventListener('click', function () {
+    setPeek(!map.peek);
+  });
+
   var savedTerrain = null;
   try {
     savedTerrain = localStorage.getItem('usgeo.terrain');
@@ -658,6 +675,14 @@
     /* not fatal */
   }
   setTerrain(savedTerrain !== '0');
+
+  var savedPeek = null;
+  try {
+    savedPeek = localStorage.getItem('usgeo.peek');
+  } catch (e) {
+    /* not fatal */
+  }
+  setPeek(savedPeek === '1');
 
   var savedHard = null;
   try {

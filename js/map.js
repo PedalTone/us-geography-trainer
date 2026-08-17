@@ -93,6 +93,7 @@
 
     this.terrain = true;
     this.hardMode = false;
+    this.peek = false;
     // Set when a round ends so the finished map can be reviewed in full, even
     // though hard mode hid everything while playing.
     this.revealAll = false;
@@ -822,9 +823,9 @@
       }
       // In hard mode the border fades out with the fill: leaving it drawn would
       // hand the player every neighbouring outline for free.
-      if (showAllBorders || ((solved || missed) && a > 0)) {
+      if (showAllBorders || this.peek || ((solved || missed) && a > 0)) {
         ctx.save();
-        ctx.globalAlpha = showAllBorders ? 1 : a;
+        ctx.globalAlpha = showAllBorders || this.peek ? 1 : a;
         ctx.strokeStyle = BORDER;
         ctx.lineWidth = 1;
         ctx.stroke(path);
