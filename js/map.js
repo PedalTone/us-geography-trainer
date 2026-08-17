@@ -552,9 +552,9 @@
   /* Tier 1 is always legible; the rest earn their place as you zoom in. */
   function tierVisible(tier, scale) {
     if (tier === 1) return true;
-    if (tier === 2) return scale >= 1.4;
-    if (tier === 3) return scale >= 2.2;
-    return scale >= 3.4;
+    if (tier === 2) return scale >= 1.1;
+    if (tier === 3) return scale >= 1.8;
+    return scale >= 3.0;
   }
 
   function SpatialGrid(w, h, cellSize) {
