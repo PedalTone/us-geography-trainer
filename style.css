@@ -730,12 +730,14 @@ body {
 
 .version {
   position: fixed;
-  bottom: 6px;
-  right: 8px;
-  font-size: 11px;
-  color: rgba(147, 166, 186, .6);
+  bottom: 12px;
+  right: 12px;
+  font-size: 12px;
+  color: var(--ink-dim);
   font-family: monospace;
   pointer-events: none;
+  z-index: 1000;
+  opacity: 0.8;
 }
 
 @media (max-width: 560px) {
