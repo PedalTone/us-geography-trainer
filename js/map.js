@@ -747,8 +747,8 @@
       var hard = this.hardMode && !this.revealAll;
       var a = 1;
       if (hard && (solved || missed)) {
-        // A miss holds longer: that reveal is the whole lesson.
-        a = fadeAlpha(solved || missed, now, missed ? 2200 : 700, 1000);
+        // A miss holds longer: that reveal is the whole lesson. 15 second fade.
+        a = fadeAlpha(solved || missed, now, missed ? 2200 : 700, 15000);
         if (a > 0) live = true;
       }
       if ((solved || missed) && a > 0) {
@@ -838,7 +838,7 @@
         var cityHard = this.hardMode && !this.revealAll;
         var ca = 1;
         if (cityHard) {
-          ca = fadeAlpha(done || miss, now, miss ? 2200 : 700, 1000);
+          ca = fadeAlpha(done || miss, now, miss ? 2200 : 700, 15000);
           if (ca > 0) live = true;
         }
         if (ca > 0) {
