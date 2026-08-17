@@ -728,6 +728,13 @@ body {
   gap: 8px;
 }
 
+.version {
+  font-size: 10px;
+  color: rgba(147, 166, 186, .5);
+  margin-left: auto;
+  font-family: monospace;
+}
+
 @media (max-width: 560px) {
   .app { padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); }
   .topbar h1 { display: none; }
