@@ -21,6 +21,70 @@
  */
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 
+const MONUMENTS = [
+  {"name": "Devils Tower", "lon": -104.8048, "lat": 44.5905},
+  {"name": "Chimney Rock", "lon": -103.3324, "lat": 41.1406},
+  {"name": "Natural Bridges", "lon": -110.1978, "lat": 37.5208},
+  {"name": "Newspaper Rock", "lon": -109.8367, "lat": 37.9061},
+  {"name": "Hovenweep", "lon": -109.3725, "lat": 37.3892},
+  {"name": "Canyons of the Ancients", "lon": -109.4136, "lat": 37.3925},
+  {"name": "Escalante Petrified Forest", "lon": -111.5878, "lat": 37.9031},
+  {"name": "Kodachrome Basin", "lon": -111.4975, "lat": 37.4475},
+  {"name": "Goosenecks", "lon": -110.1208, "lat": 37.1767},
+  {"name": "Bisti/De-Na-Zin", "lon": -108.3056, "lat": 35.8794},
+  {"name": "Kasha-Katuwe Tent Rocks", "lon": -106.3789, "lat": 35.4767},
+  {"name": "Petroglyph", "lon": -106.6636, "lat": 35.1136},
+  {"name": "El Malpais", "lon": -107.8736, "lat": 34.8042},
+  {"name": "El Morro", "lon": -108.3453, "lat": 35.0294},
+  {"name": "Salinas Pueblo Missions", "lon": -106.2556, "lat": 34.3658},
+  {"name": "Canyon de Chelly", "lon": -109.4847, "lat": 36.1533},
+  {"name": "Wupatki", "lon": -110.7733, "lat": 35.2167},
+  {"name": "Sunset Crater", "lon": -111.0225, "lat": 35.3614},
+  {"name": "Walnut Canyon", "lon": -111.5078, "lat": 35.1803},
+  {"name": "Organ Pipe Cactus", "lon": -113.3614, "lat": 32.3767},
+  {"name": "Grand Canyon-Parashant", "lon": -112.9444, "lat": 36.8333},
+  {"name": "Vermilion Cliffs", "lon": -112.0833, "lat": 36.8667},
+  {"name": "Grand Staircase-Escalante", "lon": -111.5000, "lat": 37.5000},
+  {"name": "Bears Ears", "lon": -109.7853, "lat": 37.2669},
+  {"name": "Carrizo Plain", "lon": -119.9833, "lat": 34.8667},
+  {"name": "California Coastal", "lon": -121.0000, "lat": 35.2667},
+  {"name": "Dinosaur", "lon": -109.2236, "lat": 40.4614},
+  {"name": "Craters of the Moon", "lon": -113.5144, "lat": 43.4150},
+  {"name": "Hagerman Fossil Beds", "lon": -114.9453, "lat": 42.6283},
+  {"name": "Three Sisters", "lon": -121.7667, "lat": 43.9167},
+  {"name": "Fort Vancouver", "lon": -122.6608, "lat": 45.6269},
+  {"name": "Hanford Reach", "lon": -119.5500, "lat": 46.6667},
+  {"name": "Effigy Mounds", "lon": -91.1883, "lat": 43.0717},
+  {"name": "Tallgrass Prairie", "lon": -96.8033, "lat": 38.4569},
+  {"name": "Black Kettle", "lon": -99.7833, "lat": 35.7667},
+  {"name": "Alibates Flint Quarries", "lon": -101.6958, "lat": 35.5917},
+  {"name": "Amistad", "lon": -101.0558, "lat": 30.4722},
+  {"name": "New River Gorge", "lon": -82.1042, "lat": 38.8064},
+  {"name": "Saint-Gaudens", "lon": -72.2706, "lat": 43.6481},
+  {"name": "Statue of Liberty", "lon": -74.0445, "lat": 40.6892},
+  {"name": "Independence", "lon": -75.1486, "lat": 39.9486},
+  {"name": "Fort Sumter", "lon": -80.2892, "lat": 32.7627},
+  {"name": "Fort Jefferson", "lon": -82.8628, "lat": 24.7282},
+  {"name": "Papahānaumokuākea", "lon": -160.0731, "lat": 28.1425},
+  {"name": "Medano Creek", "lon": -105.5000, "lat": 37.8000},
+  {"name": "Bighorn Canyon", "lon": -108.8833, "lat": 45.5167},
+  {"name": "Fort Niobrara", "lon": -100.3667, "lat": 42.7833},
+  {"name": "Homestead", "lon": -102.4567, "lat": 40.3061},
+  {"name": "Little Missouri", "lon": -103.4667, "lat": 47.9667},
+  {"name": "Medicine Rocks", "lon": -105.6333, "lat": 47.7000},
+  {"name": "Upper Missouri River Breaks", "lon": -109.7500, "lat": 47.9000},
+  {"name": "Gold Butte", "lon": -114.4000, "lat": 36.4500},
+  {"name": "Aniakchak", "lon": -136.1500, "lat": 56.8500},
+  {"name": "Bering Land Bridge", "lon": -165.5000, "lat": 65.5000},
+  {"name": "Cape Krusenstern", "lon": -163.5000, "lat": 67.0000},
+  {"name": "Denali", "lon": -149.5000, "lat": 63.7000},
+  {"name": "Gates of the Arctic", "lon": -150.0000, "lat": 67.5000},
+  {"name": "Katmai", "lon": -155.0000, "lat": 58.5000},
+  {"name": "Seedskadee", "lon": -109.2000, "lat": 41.3500},
+  {"name": "Castle Rock", "lon": -104.8000, "lat": 41.1500},
+  {"name": "Saratoga", "lon": -73.7667, "lat": 43.1000}
+];
+
 const DIR = (process.argv[2] || '.').replace(/\/$/, '');
 const load = (n) => JSON.parse(readFileSync(`${DIR}/${n}.geojson`, 'utf8'));
 const loadIf = (n) => {
@@ -527,6 +591,21 @@ if (volcanoJson) {
   console.log(`volcanoes: ${added} added, ${upgraded} peaks promoted`);
 }
 
+/* national monuments (curated subset) */
+let monAdded = 0;
+for (const m of MONUMENTS) {
+  if (!inBox(m.lon, m.lat) || !nearUS(m.lon, m.lat, 0.2)) continue;
+  features.push({
+    kind: 'monument',
+    name: m.name,
+    at: [round(m.lon), round(m.lat)],
+    angle: 0,
+    tier: 2,
+  });
+  monAdded++;
+}
+console.log(`monuments: ${monAdded}`);
+
 /* the Continental Divide, from OpenStreetMap natural=divide ways */
 
 const divideChains = [];
@@ -632,7 +711,7 @@ const MARQUEE = [
   'Snake R.', 'Arkansas R.', 'Tennessee R.', 'Chesapeake Bay', 'Coastal Plain',
   'Central Lowland', 'Gulf of Maine',
 ];
-const KIND_RANK = { divide: 0, river: 1, range: 2, lake: 3, sea: 4, desert: 5, plain: 6, volcano: 7, peak: 8, low: 8, park: 9, cape: 10 };
+const KIND_RANK = { divide: 0, river: 1, range: 2, lake: 3, sea: 4, desert: 5, plain: 6, volcano: 7, peak: 8, low: 8, monument: 9, park: 10, cape: 11 };
 const rank = (f) => {
   const i = MARQUEE.indexOf(f.name);
   return i === -1 ? 100 + (KIND_RANK[f.kind] ?? 9) : i;

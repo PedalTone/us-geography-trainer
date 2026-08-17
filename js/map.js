@@ -544,6 +544,7 @@
     cape: { color: '--label-peak', caps: false, track: 0, size: 10, italic: false, marker: 'dot' },
     park: { color: '--label-park', caps: false, track: 0, size: 10, italic: false, marker: 'tree' },
     volcano: { color: '--label-volcano', caps: false, track: 0, size: 10, italic: false, marker: 'volcano' },
+    monument: { color: '--label-monument', caps: false, track: 0, size: 9, italic: false, marker: 'flag' },
     divide: { color: '--label-divide', caps: true, track: 2.4, size: 10, italic: false },
   };
 
@@ -669,6 +670,21 @@
         ctx.lineTo(-1.5, 0);
         ctx.lineTo(1.5, 0);
         ctx.lineTo(4.5, 5);
+        ctx.closePath();
+        ctx.fill();
+      } else if (st.marker === 'flag') {
+        // A flag for monuments — small pole and triangle.
+        ctx.strokeStyle = c;
+        ctx.fillStyle = c;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, -6);
+        ctx.lineTo(0, 4);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, -6);
+        ctx.lineTo(4, -2);
+        ctx.lineTo(0, 1);
         ctx.closePath();
         ctx.fill();
       } else if (st.marker === 'tree') {
