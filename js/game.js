@@ -25,6 +25,59 @@
     { at: 150, label: 'EVERY CITY, FIRST TRY', bonus: 150 },
   ];
 
+  var STATE_FACTS = {
+    'Alabama': { border: 'Georgia to the north', river: 'the Tennessee River' },
+    'Alaska': { border: 'Canada to the east', river: 'the Yukon River' },
+    'Arizona': { border: 'Nevada to the west', river: 'the Colorado River' },
+    'Arkansas': { border: 'Missouri to the north', river: 'the Mississippi River' },
+    'California': { border: 'Nevada to the east', river: 'the Sacramento River' },
+    'Colorado': { border: 'Wyoming to the north', river: 'the Colorado River' },
+    'Connecticut': { border: 'New York to the west', river: 'the Connecticut River' },
+    'Delaware': { border: 'Pennsylvania to the north', river: 'the Delaware River' },
+    'Florida': { border: 'Georgia to the north', river: 'the St. Johns River' },
+    'Georgia': { border: 'Tennessee to the north', river: 'the Chattahoochee River' },
+    'Hawaii': { border: 'the Pacific Ocean', river: 'the Wailuku River' },
+    'Idaho': { border: 'Canada to the north', river: 'the Snake River' },
+    'Illinois': { border: 'Iowa to the west', river: 'the Mississippi River' },
+    'Indiana': { border: 'Michigan to the north', river: 'the Wabash River' },
+    'Iowa': { border: 'Minnesota to the north', river: 'the Missouri River' },
+    'Kansas': { border: 'Nebraska to the north', river: 'the Arkansas River' },
+    'Kentucky': { border: 'Ohio to the north', river: 'the Kentucky River' },
+    'Louisiana': { border: 'Arkansas to the north', river: 'the Mississippi River' },
+    'Maine': { border: 'Canada to the north', river: 'the Kennebec River' },
+    'Maryland': { border: 'Pennsylvania to the north', river: 'the Potomac River' },
+    'Massachusetts': { border: 'Vermont to the west', river: 'the Connecticut River' },
+    'Michigan': { border: 'Wisconsin to the west', river: 'the Grand River' },
+    'Minnesota': { border: 'Canada to the north', river: 'the Mississippi River' },
+    'Mississippi': { border: 'Tennessee to the north', river: 'the Mississippi River' },
+    'Missouri': { border: 'Iowa to the north', river: 'the Missouri River' },
+    'Montana': { border: 'Canada to the north', river: 'the Yellowstone River' },
+    'Nebraska': { border: 'South Dakota to the north', river: 'the Platte River' },
+    'Nevada': { border: 'Oregon to the north', river: 'the Humboldt River' },
+    'New Hampshire': { border: 'Vermont to the west', river: 'the Connecticut River' },
+    'New Jersey': { border: 'New York to the north', river: 'the Delaware River' },
+    'New Mexico': { border: 'Colorado to the north', river: 'the Rio Grande' },
+    'New York': { border: 'Vermont to the east', river: 'the Hudson River' },
+    'North Carolina': { border: 'Virginia to the north', river: 'the Cape Fear River' },
+    'North Dakota': { border: 'Canada to the north', river: 'the Missouri River' },
+    'Ohio': { border: 'Michigan to the north', river: 'the Ohio River' },
+    'Oklahoma': { border: 'Texas to the south', river: 'the Arkansas River' },
+    'Oregon': { border: 'Washington to the north', river: 'the Willamette River' },
+    'Pennsylvania': { border: 'New York to the north', river: 'the Allegheny River' },
+    'Rhode Island': { border: 'Massachusetts to the north', river: 'the Providence River' },
+    'South Carolina': { border: 'North Carolina to the north', river: 'the Pee Dee River' },
+    'South Dakota': { border: 'North Dakota to the north', river: 'the Missouri River' },
+    'Tennessee': { border: 'Kentucky to the north', river: 'the Tennessee River' },
+    'Texas': { border: 'Oklahoma to the north', river: 'the Brazos River' },
+    'Utah': { border: 'Idaho to the north', river: 'the Green River' },
+    'Vermont': { border: 'New Hampshire to the east', river: 'the Connecticut River' },
+    'Virginia': { border: 'Maryland to the north', river: 'the James River' },
+    'Washington': { border: 'Oregon to the south', river: 'the Columbia River' },
+    'West Virginia': { border: 'Pennsylvania to the north', river: 'the New River' },
+    'Wisconsin': { border: 'Michigan to the east', river: 'the Wisconsin River' },
+    'Wyoming': { border: 'Montana to the north', river: 'the North Platte River' },
+  };
+
   var el = {
     canvas: document.getElementById('map'),
     prompt: document.getElementById('prompt'),
@@ -280,7 +333,13 @@
     var tail = ' +' + earned;
     if (reward) tail += ' and +' + reward.bonus + ' streak bonus';
     else if (clean && game.streak >= 2) tail += ' · ' + game.streak + ' in a row';
-    say(praise + extra + tail, 'good');
+
+    var message = praise + extra + tail;
+    if (game.mode === 'states' && STATE_FACTS[item.name]) {
+      var fact = STATE_FACTS[item.name];
+      message += '\n' + item.name + ' is bordered on the south by ' + fact.border + ' and includes ' + fact.river + ' flowing through.';
+    }
+    say(message, 'good');
     advance();
   }
 
