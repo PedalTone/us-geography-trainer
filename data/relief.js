@@ -1,1 +1,1 @@
-window.US_RELIEF = {"src":"data/relief.png?v=23","hypso":"data/hypso.png?v=23","bounds":{"x0":-0.3689,"y0":-0.2448,"x1":0.3532,"y1":0.2095}};
+window.US_RELIEF = {"src":"data/relief.png?v=24","hypso":"data/hypso.png?v=24","bounds":{"x0":-0.3689,"y0":-0.2448,"x1":0.3532,"y1":0.2095}};
