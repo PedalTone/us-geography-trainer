@@ -556,13 +556,54 @@
     return scale >= 3.4;
   }
 
-  function overlaps(box, placed) {
-    for (var i = 0; i < placed.length; i++) {
-      var p = placed[i];
-      if (box.x0 < p.x1 && box.x1 > p.x0 && box.y0 < p.y1 && box.y1 > p.y0) return true;
+  function SpatialGrid(w, h, cellSize) {
+    this.w = w;
+    this.h = h;
+    this.cellSize = cellSize;
+    this.cols = Math.ceil(w / cellSize);
+    this.rows = Math.ceil(h / cellSize);
+    this.cells = {};
+  }
+
+  SpatialGrid.prototype.add = function (boxes) {
+    for (var i = 0; i < boxes.length; i++) {
+      var box = boxes[i];
+      var c0 = Math.max(0, Math.floor(box.x0 / this.cellSize));
+      var c1 = Math.min(this.cols - 1, Math.floor(box.x1 / this.cellSize));
+      var r0 = Math.max(0, Math.floor(box.y0 / this.cellSize));
+      var r1 = Math.min(this.rows - 1, Math.floor(box.y1 / this.cellSize));
+      for (var r = r0; r <= r1; r++) {
+        for (var c = c0; c <= c1; c++) {
+          var key = r + ',' + c;
+          if (!this.cells[key]) this.cells[key] = [];
+          this.cells[key].push(box);
+        }
+      }
+    }
+  };
+
+  SpatialGrid.prototype.overlaps = function (boxes) {
+    for (var i = 0; i < boxes.length; i++) {
+      var box = boxes[i];
+      var c0 = Math.max(0, Math.floor(box.x0 / this.cellSize));
+      var c1 = Math.min(this.cols - 1, Math.floor(box.x1 / this.cellSize));
+      var r0 = Math.max(0, Math.floor(box.y0 / this.cellSize));
+      var r1 = Math.min(this.rows - 1, Math.floor(box.y1 / this.cellSize));
+      for (var r = r0; r <= r1; r++) {
+        for (var c = c0; c <= c1; c++) {
+          var key = r + ',' + c;
+          var cellBoxes = this.cells[key];
+          if (cellBoxes) {
+            for (var j = 0; j < cellBoxes.length; j++) {
+              var p = cellBoxes[j];
+              if (box.x0 < p.x1 && box.x1 > p.x0 && box.y0 < p.y1 && box.y1 > p.y0) return true;
+            }
+          }
+        }
+      }
     }
     return false;
-  }
+  };
 
 /*
  * A diagonal label covers a thin strip, but its axis-aligned bounds cover a
@@ -586,11 +627,8 @@
     return boxes;
   }
 
-  function anyOverlap(boxes, placed) {
-    for (var i = 0; i < boxes.length; i++) {
-      if (overlaps(boxes[i], placed)) return true;
-    }
-    return false;
+  function anyOverlap(boxes, grid) {
+    return grid.overlaps(boxes);
   }
 
   function boundsOf(boxes) {
@@ -604,7 +642,7 @@
     return b;
   }
 
-  MapView.prototype.drawFeatureLabels = function (ctx, placed) {
+  MapView.prototype.drawFeatureLabels = function (ctx, grid) {
     if (!this.features.length) return;
     var scale = this.view.s;
     var halo = this.css('--label-halo');
@@ -633,11 +671,11 @@
         ctx.restore();
         continue;
       }
-      if (anyOverlap(boxes, placed)) {
+      if (anyOverlap(boxes, grid)) {
         ctx.restore();
         continue;
       }
-      placed.push.apply(placed, boxes);
+      grid.add(boxes);
 
       ctx.translate(x, y);
       if (f.angle) ctx.rotate(f.angle);
@@ -815,7 +853,7 @@
     }
 
     // Labels claim their space before the feature labels get a look in.
-    var placed = [];
+    var grid = new SpatialGrid(this.w, this.h, 64);
 
     // Abbreviations for states already placed — hard mode never shows them.
     if (this.mode === 'states' && (!this.hardMode || this.revealAll)) {
@@ -831,7 +869,7 @@
         var ly = this.sy(ls.anchor[1]);
         ctx.fillStyle = this.missed[ls.name] ? BAD : INK;
         ctx.fillText(ls.abbr, lx, ly);
-        placed.push({ x0: lx - 14, x1: lx + 14, y0: ly - 9, y1: ly + 9 });
+        grid.add([{ x0: lx - 14, x1: lx + 14, y0: ly - 9, y1: ly + 9 }]);
       }
       ctx.restore();
     }
@@ -872,14 +910,14 @@
         if (!cityHard) {
           ctx.fillStyle = miss ? BAD : INK;
           ctx.fillText(c.name, cx, cy - 6);
-          placed.push({ x0: cx - 30, x1: cx + 30, y0: cy - 18, y1: cy + 4 });
+          grid.add([{ x0: cx - 30, x1: cx + 30, y0: cy - 18, y1: cy + 4 }]);
         }
       }
       ctx.restore();
     }
 
     // Named geography goes on last so it never gets painted over.
-    if (this.terrain) this.drawFeatureLabels(ctx, placed);
+    if (this.terrain) this.drawFeatureLabels(ctx, grid);
 
     // Click markers: a fading X for a miss, a ring for a hit.
     for (i = this.markers.length - 1; i >= 0; i--) {
