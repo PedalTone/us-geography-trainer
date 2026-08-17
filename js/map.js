@@ -96,6 +96,7 @@
     // though hard mode hid everything while playing.
     this.revealAll = false;
     this.reliefReady = false;
+    this.hypsoReady = false;
     if (window.US_RELIEF) {
       var self = this;
       this.relief = new Image();
@@ -104,6 +105,16 @@
         self.requestDraw();
       };
       this.relief.src = window.US_RELIEF.src;
+
+      // Elevation as colour, under the shading.
+      if (window.US_RELIEF.hypso) {
+        this.hypso = new Image();
+        this.hypso.onload = function () {
+          self.hypsoReady = true;
+          self.requestDraw();
+        };
+        this.hypso.src = window.US_RELIEF.hypso;
+      }
     }
 
     this.cities = window.US_CITIES;
@@ -364,22 +375,36 @@
    * The relief is a greyscale image where 128 means flat, painted with a
    * soft-light blend so it shades the land colour instead of replacing it.
    */
+  /* Places the relief images on the exact rectangle the build script covered. */
+  MapView.prototype.placeReliefImage = function (ctx, img) {
+    var b = window.US_RELIEF.bounds;
+    ctx.drawImage(
+      img,
+      this.sx(b.x0),
+      this.sy(b.y0),
+      (b.x1 - b.x0) * this.k,
+      (b.y1 - b.y0) * this.k
+    );
+  };
+
+  /* The hypsometric tint: green lowlands through tan to pale summits. */
+  MapView.prototype.drawHypso = function (ctx) {
+    if (!this.hypsoReady) return;
+    ctx.save();
+    ctx.imageSmoothingQuality = 'high';
+    this.placeReliefImage(ctx, this.hypso);
+    ctx.restore();
+  };
+
   MapView.prototype.drawRelief = function (ctx) {
     if (!this.reliefReady) return;
-    var b = window.US_RELIEF.bounds;
     ctx.save();
     // Overlay rather than soft-light: against a land colour this dark,
     // soft-light is almost invisible.
     ctx.globalCompositeOperation = 'overlay';
     ctx.globalAlpha = 1;
     ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(
-      this.relief,
-      this.sx(b.x0),
-      this.sy(b.y0),
-      (b.x1 - b.x0) * this.k,
-      (b.y1 - b.y0) * this.k
-    );
+    this.placeReliefImage(ctx, this.relief);
     ctx.restore();
   };
 
@@ -410,26 +435,32 @@
     ctx.restore();
   };
 
-  /* The Continental Divide: dashed, and warm so it never reads as a river. */
+  /*
+   * The Continental Divide: dashed and warm so it never reads as a river, over
+   * a dark casing so it stays visible on the pale high ground it runs along.
+   */
   MapView.prototype.drawDivide = function (ctx) {
     if (!this.divide.length) return;
-    ctx.save();
-    ctx.strokeStyle = this.css('--divide-line');
-    ctx.lineWidth = 1.6;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'butt';
-    ctx.setLineDash([6, 4]);
-    ctx.beginPath();
+    var path = new Path2D();
     for (var i = 0; i < this.divide.length; i++) {
       var line = this.divide[i];
       for (var j = 0; j < line.length; j++) {
         var x = this.sx(line[j][0]);
         var y = this.sy(line[j][1]);
-        if (j === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+        if (j === 0) path.moveTo(x, y);
+        else path.lineTo(x, y);
       }
     }
-    ctx.stroke();
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'butt';
+    ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = this.css('--divide-casing');
+    ctx.lineWidth = 3.6;
+    ctx.stroke(path);
+    ctx.strokeStyle = this.css('--divide-line');
+    ctx.lineWidth = 1.6;
+    ctx.stroke(path);
     ctx.restore();
   };
 
@@ -697,6 +728,7 @@
     if (this.terrain) {
       ctx.save();
       ctx.clip(land, 'evenodd');
+      this.drawHypso(ctx);
       this.drawRelief(ctx);
       this.drawRivers(ctx);
       this.drawDivide(ctx);

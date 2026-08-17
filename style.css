@@ -15,7 +15,8 @@
   --coast: rgba(151, 194, 232, .75);
   --river: #7fb6e6;
   --water: #16273a;
-  --divide-line: rgba(233, 194, 128, .8);
+  --divide-line: #f6d49a;
+  --divide-casing: rgba(12, 18, 24, .6);
 
   /* Feature label ink. The halo is what keeps type legible over relief. */
   --label-land: #e2cdae;

@@ -8,8 +8,10 @@ so it runs on GitHub Pages as-is.
 ## The two modes
 
 **States** — no state lines at all: just coastline, national border, and the
-physical geography — shaded relief, rivers and lakes — so you can find Colorado
-by the Front Range or Iowa by the two rivers bracketing it. You're asked for one
+physical geography. The land is coloured by elevation the way a physical atlas
+does it — green lowlands through khaki plains to pale summits — with shaded
+relief, rivers and lakes over the top, so you can find Colorado by the Front
+Range or Iowa by the two rivers bracketing it. You're asked for one
 state at a time; click where you think it is, and its border is drawn in when
 you get it right. Finish all 48 to fill in the map.
 
@@ -147,10 +149,17 @@ uses. Two things it does that are worth knowing:
 
 The relief is the third interesting piece. The terrain tiles are Web Mercator
 and the game draws in Albers, so `build-relief.mjs` inverse projects every
-output pixel to lon/lat and samples the Mercator elevation grid. The result is a
-single greyscale image that lines up with the geometry exactly, painted over the
-land with an `overlay` blend — 128 means flat, so the blend shades the land
-colour instead of tinting it.
+output pixel to lon/lat and samples the Mercator elevation grid. The result
+lines up with the geometry exactly.
+
+It writes two images from the same grid. `relief.png` is the greyscale
+hillshade at full resolution, painted with an `overlay` blend — 128 means flat,
+so the blend shades whatever is underneath instead of tinting it. `hypso.png` is
+the elevation colour ramp underneath it, and only needs a third of the
+resolution: the tint is smooth, every crisp ridge comes from the hillshade
+above, and a smooth image costs almost nothing to compress. Splitting them this
+way keeps the colour layer at 200 KB — baking colour into the full-resolution
+hillshade would have tripled an already noisy 873 KB image.
 
 To regenerate:
 

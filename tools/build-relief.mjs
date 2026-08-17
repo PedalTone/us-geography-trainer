@@ -103,35 +103,36 @@ function decodePNG(buf) {
   return { width, height, bpp, data: out };
 }
 
-/** Encodes 8-bit greyscale. Picks the cheapest of three row filters. */
-function encodeGrayPNG(width, height, gray) {
-  const rows = Buffer.alloc((width + 1) * height);
+/** Encodes 8-bit greyscale (channels 1) or RGB (channels 3). */
+function encodePNG(width, height, data, channels = 1) {
+  const stride = width * channels;
+  const rows = Buffer.alloc((stride + 1) * height);
   for (let y = 0; y < height; y++) {
-    const src = gray.subarray(y * width, (y + 1) * width);
-    const prev = y ? gray.subarray((y - 1) * width, y * width) : null;
+    const src = data.subarray(y * stride, (y + 1) * stride);
+    const prev = y ? data.subarray((y - 1) * stride, y * stride) : null;
     const cand = [];
     // 0: none, 1: sub, 2: up
     cand.push({ f: 0, line: Buffer.from(src) });
-    const sub = Buffer.alloc(width);
-    for (let x = 0; x < width; x++) sub[x] = (src[x] - (x ? src[x - 1] : 0)) & 0xff;
+    const sub = Buffer.alloc(stride);
+    for (let x = 0; x < stride; x++) sub[x] = (src[x] - (x >= channels ? src[x - channels] : 0)) & 0xff;
     cand.push({ f: 1, line: sub });
     if (prev) {
-      const up = Buffer.alloc(width);
-      for (let x = 0; x < width; x++) up[x] = (src[x] - prev[x]) & 0xff;
+      const up = Buffer.alloc(stride);
+      for (let x = 0; x < stride; x++) up[x] = (src[x] - prev[x]) & 0xff;
       cand.push({ f: 2, line: up });
     }
     let best = cand[0];
     let bestScore = Infinity;
     for (const c of cand) {
       let s = 0;
-      for (let x = 0; x < width; x++) s += Math.min(c.line[x], 256 - c.line[x]);
+      for (let x = 0; x < stride; x++) s += Math.min(c.line[x], 256 - c.line[x]);
       if (s < bestScore) {
         bestScore = s;
         best = c;
       }
     }
-    rows[y * (width + 1)] = best.f;
-    best.line.copy(rows, y * (width + 1) + 1);
+    rows[y * (stride + 1)] = best.f;
+    best.line.copy(rows, y * (stride + 1) + 1);
   }
 
   const chunk = (type, body) => {
@@ -146,7 +147,7 @@ function encodeGrayPNG(width, height, gray) {
   ihdr.writeUInt32BE(width, 0);
   ihdr.writeUInt32BE(height, 4);
   ihdr[8] = 8; // bit depth
-  ihdr[9] = 0; // greyscale
+  ihdr[9] = channels === 3 ? 2 : 0; // truecolour or greyscale
   return Buffer.concat([
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     chunk('IHDR', ihdr),
@@ -298,12 +299,81 @@ for (let y = 0; y < OUT_H; y++) {
   }
 }
 
-const png = encodeGrayPNG(OUT_W, OUT_H, gray);
+const png = encodePNG(OUT_W, OUT_H, gray, 1);
 writeFileSync('data/relief.png', png);
+
+/* ---- hypsometric tint ------------------------------------------------ */
+
+/*
+ * Elevation as colour: green lowlands through khaki and tan to pale summits,
+ * the way a physical atlas does it. It only needs to be low resolution — the
+ * tint is smooth, and every crisp ridge in the final image comes from the
+ * greyscale hillshade painted over it. A smooth image also costs almost
+ * nothing to compress.
+ */
+const RAMP = [
+  [-90, [46, 74, 62]],
+  [200, [52, 84, 62]],
+  [600, [76, 98, 66]],
+  [1100, [110, 116, 72]],
+  [1600, [138, 124, 82]],
+  [2200, [157, 130, 97]],
+  [2900, [174, 152, 128]],
+  [3500, [201, 190, 178]],
+  [4300, [232, 236, 239]],
+];
+
+function tint(metres) {
+  if (metres <= RAMP[0][0]) return RAMP[0][1];
+  for (let i = 1; i < RAMP.length; i++) {
+    if (metres <= RAMP[i][0]) {
+      const [e0, c0] = RAMP[i - 1];
+      const [e1, c1] = RAMP[i];
+      const t = (metres - e0) / (e1 - e0);
+      return [
+        Math.round(c0[0] + (c1[0] - c0[0]) * t),
+        Math.round(c0[1] + (c1[1] - c0[1]) * t),
+        Math.round(c0[2] + (c1[2] - c0[2]) * t),
+      ];
+    }
+  }
+  return RAMP[RAMP.length - 1][1];
+}
+
+const HYPSO_W = Math.round(OUT_W / 3);
+const HYPSO_H = Math.round(OUT_H / 3);
+const rgb = Buffer.alloc(HYPSO_W * HYPSO_H * 3);
+for (let y = 0; y < HYPSO_H; y++) {
+  for (let x = 0; x < HYPSO_W; x++) {
+    // Average the block this pixel covers, so the tint steps stay smooth.
+    let sum = 0;
+    let n = 0;
+    for (let sy = 0; sy < 3; sy++) {
+      for (let sx = 0; sx < 3; sx++) {
+        const fy = Math.min(OUT_H - 1, y * 3 + sy);
+        const fx = Math.min(OUT_W - 1, x * 3 + sx);
+        sum += height[fy * OUT_W + fx];
+        n++;
+      }
+    }
+    const c = tint(sum / n);
+    const i = (y * HYPSO_W + x) * 3;
+    rgb[i] = c[0];
+    rgb[i + 1] = c[1];
+    rgb[i + 2] = c[2];
+  }
+}
+const hypso = encodePNG(HYPSO_W, HYPSO_H, rgb, 3);
+writeFileSync('data/hypso.png', hypso);
+console.log(`wrote data/hypso.png (${HYPSO_W}x${HYPSO_H}, ${(hypso.length / 1024).toFixed(0)} KB)`);
 // The renderer needs the exact projected rectangle this image covers, or the
 // relief drifts against the coastline.
 writeFileSync(
   'data/relief.js',
-  `window.US_RELIEF = ${JSON.stringify({ src: 'data/relief.png?v=8', bounds: BOUNDS })};\n`
+  `window.US_RELIEF = ${JSON.stringify({
+    src: 'data/relief.png?v=9',
+    hypso: 'data/hypso.png?v=9',
+    bounds: BOUNDS,
+  })};\n`
 );
 console.log(`wrote data/relief.png (${OUT_W}x${OUT_H}, ${(png.length / 1024).toFixed(0)} KB) and data/relief.js`);
