@@ -4,6 +4,7 @@
   'use strict';
 
   var PAD = 14;
+  var textWidthCache = {}; // Cache for text measurements to avoid repeated ctx.measureText() calls
 
   function MapView(canvas) {
     this.canvas = canvas;
@@ -658,12 +659,23 @@
       if (x < -60 || y < -30 || x > this.w + 60 || y > this.h + 30) continue;
 
       var text = st.caps ? f.name.toUpperCase() : f.name;
+      var fontKey = (st.italic ? 'i' : '') + (st.caps ? '6' : '5') + st.size;
+      var cacheKey = text + ':' + fontKey;
+      var w;
+      if (textWidthCache[cacheKey] !== undefined) {
+        w = textWidthCache[cacheKey];
+      } else {
+        ctx.save();
+        ctx.font =
+          (st.italic ? 'italic ' : '') + (st.caps ? '600 ' : '500 ') + st.size + 'px system-ui, sans-serif';
+        w = ctx.measureText(text).width;
+        ctx.restore();
+        textWidthCache[cacheKey] = w;
+      }
       ctx.save();
       ctx.font =
         (st.italic ? 'italic ' : '') + (st.caps ? '600 ' : '500 ') + st.size + 'px system-ui, sans-serif';
       if ('letterSpacing' in ctx) ctx.letterSpacing = st.track + 'px';
-
-      var w = ctx.measureText(text).width;
       var boxes = labelBoxes(x, y, w + 4, st.size + 4, f.angle);
       var span = boundsOf(boxes);
       // A label that runs off the canvas is worse than no label at all.
