@@ -729,10 +729,13 @@ body {
 }
 
 .version {
-  font-size: 10px;
-  color: rgba(147, 166, 186, .5);
-  margin-left: auto;
+  position: fixed;
+  bottom: 6px;
+  right: 8px;
+  font-size: 11px;
+  color: rgba(147, 166, 186, .6);
   font-family: monospace;
+  pointer-events: none;
 }
 
 @media (max-width: 560px) {
