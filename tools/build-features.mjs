@@ -19,7 +19,7 @@
  * Output is data/features.js. Region polygons are kept (simplified) so a future
  * mode can ask the player to find the Rockies, not just read the label.
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 
 const DIR = (process.argv[2] || '.').replace(/\/$/, '');
 const load = (n) => JSON.parse(readFileSync(`${DIR}/${n}.geojson`, 'utf8'));
@@ -259,39 +259,55 @@ function nearUS(lon, lat, toleranceDeg) {
 const features = [];
 
 /* regions: ranges, plateaus, plains, deserts */
-const polys = load('ne_50m_geography_regions_polys');
-for (const f of polys.features) {
-  const p = f.properties;
-  const name = p.NAME;
-  if (!name || SKIP.has(name)) continue;
-  const kind = CLASS_KIND[p.FEATURECLA];
-  if (!kind) continue;
 
-  const shapes = f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : [f.geometry.coordinates];
-  // Largest ring wins for elongated multi-part ranges.
-  let biggest = null;
-  let bigArea = 0;
-  for (const rings of shapes) {
-    let a = 0;
-    const r = rings[0];
-    for (let i = 0, j = r.length - 1; i < r.length; j = i++) a += r[j][0] * r[i][1] - r[i][0] * r[j][1];
-    if (Math.abs(a / 2) > bigArea) { bigArea = Math.abs(a / 2); biggest = rings; }
+function addRegions(collection, defaultTier) {
+  if (!collection) return 0;
+  let n = 0;
+  for (const f of collection.features) {
+    const p = f.properties;
+    // The two scales disagree on case for the property names.
+    const name = p.NAME || p.name;
+    const cla = p.FEATURECLA || p.featurecla;
+    if (!name || SKIP.has(name)) continue;
+    const kind = CLASS_KIND[cla];
+    if (!kind || !f.geometry) continue;
+
+    const shapes =
+      f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : [f.geometry.coordinates];
+    // Largest ring wins for elongated multi-part ranges.
+    let biggest = null;
+    let bigArea = 0;
+    for (const rings of shapes) {
+      let a = 0;
+      const r = rings[0];
+      for (let i = 0, j = r.length - 1; i < r.length; j = i++) a += r[j][0] * r[i][1] - r[i][0] * r[j][1];
+      if (Math.abs(a / 2) > bigArea) { bigArea = Math.abs(a / 2); biggest = rings; }
+    }
+    if (!biggest) continue;
+
+    const at = labelPoint(biggest);
+    if (!at || !inBox(at[0], at[1]) || !nearUS(at[0], at[1], 0.4)) continue;
+
+    const pa = principalAngle(biggest[0]);
+    features.push({
+      kind,
+      name: tidyName(name),
+      at: [round(at[0]), round(at[1])],
+      angle: pa.elongation > 1.9 ? readableAngle(pa.angle) : 0,
+      tier: TIER1.has(name) ? 1 : defaultTier,
+      poly: simplify(biggest[0], 0.25),
+    });
+    n++;
   }
-  if (!biggest) continue;
-
-  const at = labelPoint(biggest);
-  if (!at || !inBox(at[0], at[1]) || !nearUS(at[0], at[1], 0.4)) continue;
-
-  const pa = principalAngle(biggest[0]);
-  features.push({
-    kind,
-    name: tidyName(name),
-    at: [round(at[0]), round(at[1])],
-    angle: pa.elongation > 1.9 ? readableAngle(pa.angle) : 0,
-    tier: TIER1.has(name) ? 1 : 2,
-    poly: simplify(biggest[0], 0.25),
-  });
+  return n;
 }
+
+// 10m goes first so its finer geometry wins the de-duplication. It is also
+// where the state-identifying ranges live — Front Range, Wasatch, Blue Ridge,
+// Adirondacks, Black Hills — which the 50m file is too coarse to carry.
+const fine = addRegions(loadIf('ne_10m_geography_regions_polys'), 2);
+const coarse = addRegions(load('ne_50m_geography_regions_polys'), 2);
+console.log(`regions: ${fine} from 10m, ${coarse} from 50m (before de-duplication)`);
 
 /* rivers: label set along the flow, ranked by how long the river actually is */
 
@@ -364,17 +380,18 @@ for (const [name, e] of riverRuns) {
 console.log(`rivers labelled: ${riverCount} of ${riverRuns.size} named`);
 
 /* lakes */
-const lakes = load('ne_50m_lakes');
+const lakes = loadIf('ne_10m_lakes') || load('ne_50m_lakes');
+let lakeCount = 0;
 for (const f of lakes.features) {
   const name = f.properties.name;
-  if (!name || SKIP.has(name)) continue;
+  if (!name || SKIP.has(name) || !f.geometry) continue;
   const shapes = f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : [f.geometry.coordinates];
   const rings = shapes[0];
   let a = 0;
   const r = rings[0];
   for (let i = 0, j = r.length - 1; i < r.length; j = i++) a += r[j][0] * r[i][1] - r[i][0] * r[j][1];
   const area = Math.abs(a / 2);
-  if (area < 0.05) continue;
+  if (area < 0.004) continue;
   const at = labelPoint(rings);
   // 1.4 degrees keeps the Great Lakes, which sit off shore, without reaching
   // Nipigon or Winnipeg.
@@ -384,19 +401,25 @@ for (const f of lakes.features) {
     name,
     at: [round(at[0]), round(at[1])],
     angle: 0,
-    tier: area > 3 ? 1 : 2,
+    tier: area > 3 ? 1 : area > 0.4 ? 2 : area > 0.06 ? 3 : 4,
   });
+  lakeCount++;
 }
+console.log(`lakes: ${lakeCount}`);
 
-/* gulfs and bays */
-const marine = load('ne_50m_geography_marine_polys');
-for (const f of marine.features) {
-  const name = f.properties.name;
-  if (!name || SKIP.has(name)) continue;
-  const shapes = f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : [f.geometry.coordinates];
-  const at = labelPoint(shapes[0]);
-  if (!at || !inBox(at[0], at[1]) || !nearUS(at[0], at[1], 4.5)) continue;
-  features.push({ kind: 'sea', name, at: [round(at[0]), round(at[1])], angle: 0, tier: 1 });
+/* gulfs, bays and sounds — 10m adds Puget Sound, Delaware Bay and friends */
+for (const marine of [loadIf('ne_10m_geography_marine_polys'), load('ne_50m_geography_marine_polys')]) {
+  if (!marine) continue;
+  for (const f of marine.features) {
+    const name = f.properties.name;
+    if (!name || SKIP.has(name) || !f.geometry) continue;
+    const shapes = f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : [f.geometry.coordinates];
+    const at = labelPoint(shapes[0]);
+    if (!at || !inBox(at[0], at[1]) || !nearUS(at[0], at[1], 4.5)) continue;
+    // The named ocean basins are tier 1; a bay is a local landmark.
+    const big = /gulf|ocean|sea/i.test(f.properties.featurecla || '');
+    features.push({ kind: 'sea', name, at: [round(at[0]), round(at[1])], angle: 0, tier: big ? 1 : 3 });
+  }
 }
 
 /* peaks and capes: point features, kept for the zoomed-in view */
@@ -421,13 +444,15 @@ for (const f of peaks.features) {
 }
 console.log(`peaks: ${peakCount}`);
 
-const points = load('ne_50m_geography_regions_points');
-for (const f of points.features) {
-  const cla = f.properties.featurecla;
-  if (cla !== 'cape' && cla !== 'waterfall') continue;
-  const [lon, lat] = f.geometry.coordinates;
-  if (!f.properties.name || !inBox(lon, lat) || !nearUS(lon, lat, 0.6)) continue;
-  features.push({ kind: 'cape', name: f.properties.name, at: [round(lon), round(lat)], angle: 0, tier: 3 });
+for (const points of [loadIf('ne_10m_geography_regions_points'), load('ne_50m_geography_regions_points')]) {
+  if (!points) continue;
+  for (const f of points.features) {
+    const cla = f.properties.featurecla;
+    if (cla !== 'cape' && cla !== 'waterfall') continue;
+    const [lon, lat] = f.geometry.coordinates;
+    if (!f.properties.name || !inBox(lon, lat) || !nearUS(lon, lat, 0.6)) continue;
+    features.push({ kind: 'cape', name: f.properties.name, at: [round(lon), round(lat)], angle: 0, tier: 3 });
+  }
 }
 
 /* national parks, from Wikidata */
@@ -461,6 +486,129 @@ if (parkJson) {
   console.log(`national parks: ${parkCount}`);
 }
 
+/* volcanoes, from the Smithsonian Global Volcanism Program */
+
+let volcanoJson = null;
+try {
+  volcanoJson = JSON.parse(readFileSync(`${DIR}/volcanoes.json`, 'utf8'));
+} catch (e) {
+  console.log('  (optional volcanoes.json not found — skipping volcanoes)');
+}
+if (volcanoJson) {
+  let added = 0;
+  let upgraded = 0;
+  for (const f of volcanoJson.features) {
+    const [lon, lat] = f.geometry.coordinates;
+    if (!inBox(lon, lat) || !nearUS(lon, lat, 0.2)) continue;
+    const p = f.properties;
+    const elevation = p.Elevation || 0;
+
+    // Many Cascade volcanoes are already in the peak list under a different
+    // form of the name ("Mount Rainier" vs "Rainier"), so match on position and
+    // promote the existing label rather than printing both.
+    const near = features.find(
+      (x) => x.kind === 'peak' && Math.hypot(x.at[0] - lon, x.at[1] - lat) < 0.15
+    );
+    if (near) {
+      near.kind = 'volcano';
+      upgraded++;
+      continue;
+    }
+    features.push({
+      kind: 'volcano',
+      name: p.Volcano_Name,
+      at: [round(lon), round(lat)],
+      angle: 0,
+      tier: elevation >= 3000 ? 2 : elevation >= 1500 ? 3 : 4,
+      elev: elevation || null,
+    });
+    added++;
+  }
+  console.log(`volcanoes: ${added} added, ${upgraded} peaks promoted`);
+}
+
+/* the Continental Divide, from OpenStreetMap natural=divide ways */
+
+const divideChains = [];
+const divideFiles = readdirSync(DIR).filter((f) => /^divide.*\.json$/.test(f));
+if (divideFiles.length) {
+  let ways = [];
+  for (const file of divideFiles) {
+    let d;
+    try {
+      d = JSON.parse(readFileSync(`${DIR}/${file}`, 'utf8'));
+    } catch (e) {
+      // A timed-out Overpass request lands as an XML error page.
+      console.log(`  (skipping ${file} — not JSON)`);
+      continue;
+    }
+    for (const e of d.elements || []) {
+      if (!e.geometry || e.geometry.length < 2) continue;
+      if (!/contin/i.test((e.tags && e.tags.name) || '')) continue;
+      const pts = e.geometry.map((g) => [g.lon, g.lat]).filter(([lon, lat]) => inBox(lon, lat));
+      if (pts.length > 1) ways.push(pts);
+    }
+  }
+
+  /*
+   * OSM holds the divide as a few hundred separate ways. Joining them where
+   * their endpoints meet turns it back into long continuous lines, which both
+   * draws better (dashes flow) and gives somewhere sensible to put the label.
+   */
+  const key = (pt) => pt[0].toFixed(4) + ',' + pt[1].toFixed(4);
+  const open = new Map();
+  for (const w of ways) {
+    const a = key(w[0]);
+    const b = key(w[w.length - 1]);
+    (open.get(a) || open.set(a, []).get(a)).push({ w, atStart: true });
+    (open.get(b) || open.set(b, []).get(b)).push({ w, atStart: false });
+  }
+  const used = new Set();
+  for (const w of ways) {
+    if (used.has(w)) continue;
+    used.add(w);
+    const chain = w.slice();
+    // Extend from both ends for as long as something connects.
+    for (let dir = 0; dir < 2; dir++) {
+      for (;;) {
+        const end = dir === 0 ? chain[chain.length - 1] : chain[0];
+        const cands = (open.get(key(end)) || []).filter((c) => !used.has(c.w));
+        if (!cands.length) break;
+        const next = cands[0];
+        used.add(next.w);
+        const seg = next.atStart ? next.w.slice(1) : next.w.slice(0, -1).reverse();
+        if (dir === 0) chain.push(...seg);
+        else chain.unshift(...seg.reverse());
+      }
+    }
+    divideChains.push(chain);
+  }
+
+  divideChains.sort((a, b) => b.length - a.length);
+  const thinned = divideChains
+    .map((c) => simplify(c, 0.012))
+    .filter((c) => c.length >= 4);
+  divideChains.length = 0;
+  divideChains.push(...thinned);
+
+  const longest = divideChains[0];
+  if (longest) {
+    const mid = Math.floor(longest.length / 2);
+    const w = Math.max(2, Math.floor(longest.length * 0.04));
+    const a = project(...longest[Math.max(0, mid - w)]);
+    const b = project(...longest[Math.min(longest.length - 1, mid + w)]);
+    features.push({
+      kind: 'divide',
+      name: 'Continental Divide',
+      at: [round(longest[mid][0]), round(longest[mid][1])],
+      angle: readableAngle(Math.atan2(b[1] - a[1], b[0] - a[0])),
+      tier: 2,
+    });
+  }
+  const pts = divideChains.reduce((n, c) => n + c.length, 0);
+  console.log(`continental divide: ${ways.length} ways -> ${divideChains.length} chains, ${pts} points`);
+}
+
 // "Fort Peck Lake" and "Ft. Peck Lake" are the same lake twice.
 const norm = (n) => n.toLowerCase().replace(/\bft\.?\b/g, 'fort').replace(/[^a-z]/g, '');
 const kept = new Map();
@@ -484,7 +632,7 @@ const MARQUEE = [
   'Snake R.', 'Arkansas R.', 'Tennessee R.', 'Chesapeake Bay', 'Coastal Plain',
   'Central Lowland', 'Gulf of Maine',
 ];
-const KIND_RANK = { river: 0, range: 1, lake: 2, sea: 3, desert: 4, plain: 5, peak: 6, low: 6, park: 7, cape: 8 };
+const KIND_RANK = { divide: 0, river: 1, range: 2, lake: 3, sea: 4, desert: 5, plain: 6, volcano: 7, peak: 8, low: 8, park: 9, cape: 10 };
 const rank = (f) => {
   const i = MARQUEE.indexOf(f.name);
   return i === -1 ? 100 + (KIND_RANK[f.kind] ?? 9) : i;
@@ -498,5 +646,9 @@ for (const t of [1, 2, 3, 4]) {
   console.log(`  tier ${t}: ` + features.filter((f) => f.tier === t).map((f) => f.name).join(', '));
 }
 
-writeFileSync('data/features.js', `window.US_FEATURES = ${JSON.stringify(features)};\n`);
+writeFileSync(
+  'data/features.js',
+  `window.US_FEATURES = ${JSON.stringify(features)};\n` +
+    `window.US_DIVIDE = ${JSON.stringify(divideChains)};\n`
+);
 console.log('wrote data/features.js');

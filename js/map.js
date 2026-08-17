@@ -69,6 +69,13 @@
       });
     });
 
+    // The Continental Divide, as a handful of long chains.
+    this.divide = (window.US_DIVIDE || []).map(function (line) {
+      return line.map(function (pt) {
+        return window.Geo.project(pt[0], pt[1]);
+      });
+    });
+
     // Named physical features. Projected once; the label anchor and the angle
     // the type is set at both come from the build script.
     this.features = (window.US_FEATURES || []).map(function (f) {
@@ -403,6 +410,29 @@
     ctx.restore();
   };
 
+  /* The Continental Divide: dashed, and warm so it never reads as a river. */
+  MapView.prototype.drawDivide = function (ctx) {
+    if (!this.divide.length) return;
+    ctx.save();
+    ctx.strokeStyle = this.css('--divide-line');
+    ctx.lineWidth = 1.6;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'butt';
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    for (var i = 0; i < this.divide.length; i++) {
+      var line = this.divide[i];
+      for (var j = 0; j < line.length; j++) {
+        var x = this.sx(line[j][0]);
+        var y = this.sy(line[j][1]);
+        if (j === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+    }
+    ctx.stroke();
+    ctx.restore();
+  };
+
   MapView.prototype.drawLakes = function (ctx) {
     if (!this.lakes.length) return;
     var path = new Path2D();
@@ -482,6 +512,8 @@
     low: { color: '--label-peak', caps: false, track: 0, size: 10, italic: false, marker: 'peak' },
     cape: { color: '--label-peak', caps: false, track: 0, size: 10, italic: false, marker: 'dot' },
     park: { color: '--label-park', caps: false, track: 0, size: 10, italic: false, marker: 'tree' },
+    volcano: { color: '--label-volcano', caps: false, track: 0, size: 10, italic: false, marker: 'volcano' },
+    divide: { color: '--label-divide', caps: true, track: 2.4, size: 10, italic: false },
   };
 
   /* Tier 1 is always legible; the rest earn their place as you zoom in. */
@@ -599,6 +631,15 @@
         ctx.beginPath();
         ctx.arc(0, 3, 2, 0, Math.PI * 2);
         ctx.fill();
+      } else if (st.marker === 'volcano') {
+        // A cone with a flat crater, so it reads differently from a peak.
+        ctx.beginPath();
+        ctx.moveTo(-4.5, 5);
+        ctx.lineTo(-1.5, 0);
+        ctx.lineTo(1.5, 0);
+        ctx.lineTo(4.5, 5);
+        ctx.closePath();
+        ctx.fill();
       } else if (st.marker === 'tree') {
         // A little conifer, so parks read differently from peaks at a glance.
         ctx.beginPath();
@@ -658,6 +699,7 @@
       ctx.clip(land, 'evenodd');
       this.drawRelief(ctx);
       this.drawRivers(ctx);
+      this.drawDivide(ctx);
       ctx.restore();
       this.drawLakes(ctx); // outside the clip: the Great Lakes are not land
     }

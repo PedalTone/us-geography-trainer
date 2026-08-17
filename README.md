@@ -25,8 +25,14 @@ zooming in reveals the next one:
 | 3 | 2.2x | smaller rivers and lakes, **national parks**, capes |
 | 4 | 3.4x | the rest of the river network and the smaller summits |
 
-That covers 163 named rivers, 42 peaks and 48 national parks, plus ranges,
-plateaus, deserts, lakes, gulfs and capes.
+That covers 163 rivers, 109 lakes, 48 national parks, 43 volcanoes, 37 peaks,
+24 ranges and the **Continental Divide**, plus plateaus, deserts, plains, gulfs,
+bays, sounds and capes — 460 named features in all.
+
+Volcanoes get a cone marker and peaks a triangle, so Rainier reads as a volcano
+and Whitney does not. Where the two datasets describe the same mountain — the
+Smithsonian calls it "Rainier", Natural Earth "Mount Rainier" — the peak is
+promoted to a volcano by position rather than printed twice.
 
 The **Terrain** switch turns the whole geography layer — relief, rivers, lakes
 and labels — off if you want the bare silhouette instead. The setting sticks.
@@ -114,10 +120,16 @@ tools/build-*.mjs      regenerate the data files (only needed to change data)
   `states-10m` (US Census cartographic boundary files, public domain)
 - Cities: [plotly datasets](https://github.com/plotly/datasets)
   `2014_us_cities.csv`
-- Rivers and lakes: [Natural Earth](https://github.com/nvkelso/natural-earth-vector)
-  50m centrelines for the main stems, 10m North America for the tributary
-  network, 10m elevation points for the peaks (public domain)
+- Rivers, lakes and landforms: [Natural Earth](https://github.com/nvkelso/natural-earth-vector)
+  — 50m centrelines for the main stems, 10m North America for the tributary
+  network, and the 10m region, marine, lake and elevation files for everything
+  else. The 10m landform set is where the state-identifying ranges live: Front
+  Range, Wasatch, Blue Ridge, Adirondacks, Black Hills, Mogollon Rim (public domain)
 - National parks: [Wikidata](https://query.wikidata.org/) (CC0)
+- Volcanoes: [Smithsonian Global Volcanism Program](https://volcano.si.edu/)
+  Holocene list — which is why Yellowstone is absent, its last eruption being
+  well before the Holocene; it is labelled as a national park instead
+- Continental Divide: OpenStreetMap `natural=divide` ways (ODbL)
 - Elevation: [AWS terrain tiles](https://registry.opendata.aws/terrain-tiles/)
   (public, no key)
 
@@ -154,11 +166,27 @@ node tools/build-relief.mjs --zoom 6 --width 1920
 node tools/build-features.mjs <dir-with-natural-earth-geojson>
 ```
 
-National parks come from Wikidata, saved as `parks.json` in the same directory
-(`build-features.mjs` skips them if it isn't there):
+The extra sources are optional — `build-features.mjs` skips any that are
+missing. National parks come from Wikidata as `parks.json`:
 
 ```bash
 curl -sG https://query.wikidata.org/sparql -H 'Accept: application/sparql-results+json' -o parks.json --data-urlencode 'query=SELECT ?parkLabel ?coord WHERE { ?park wdt:P31 wd:Q34918903 . ?park wdt:P625 ?coord . SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } }'
+```
+
+Volcanoes go in the same directory as `volcanoes.json`:
+
+```bash
+curl -sL -o volcanoes.json 'https://webservices.volcano.si.edu/geoserver/GVP-VOTW/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GVP-VOTW:Smithsonian_VOTW_Holocene_Volcanoes&outputFormat=application/json'
+```
+
+The Continental Divide comes from Overpass as any number of `divide*.json`
+files. OpenStreetMap holds it as ~180 separate ways, so the build stitches them
+back into continuous chains by matching endpoints — 181 ways become 14 lines,
+which both draws better (the dashes flow) and gives the label somewhere sensible
+to sit. Query it in latitude bands; the whole Rockies at once tends to time out:
+
+```bash
+curl -s -X POST -d '[out:json][timeout:120];way["natural"="divide"]["name"~"Contin",i](37.0,-120.0,43.0,-100.0);out geom;' https://overpass.kumi.systems/api/interpreter -o divide_37.json
 ```
 
 Two ranking notes. The 10m North America river file is a *detail* layer, not an

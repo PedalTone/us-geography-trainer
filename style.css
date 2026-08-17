@@ -15,12 +15,15 @@
   --coast: rgba(151, 194, 232, .75);
   --river: #7fb6e6;
   --water: #16273a;
+  --divide-line: rgba(233, 194, 128, .8);
 
   /* Feature label ink. The halo is what keeps type legible over relief. */
   --label-land: #e2cdae;
   --label-water: #a7d4f5;
   --label-peak: #d7dee7;
   --label-park: #8fd7a6;
+  --label-volcano: #f4ac8e;
+  --label-divide: #edcf9a;
   --label-halo: rgba(8, 14, 21, .82);
 
   --good: #4ade80;

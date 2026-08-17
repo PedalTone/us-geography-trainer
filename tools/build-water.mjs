@@ -106,8 +106,14 @@ for (const f of lakesGeo.features) {
     for (let i = 0, j = outer.length - 1; i < outer.length; j = i++) {
       a += outer[j][0] * outer[i][1] - outer[i][0] * outer[j][1];
     }
-    if (Math.abs(a / 2) < 0.02) continue;
-    lakes.push(rings.map((r) => r.map((pt) => [round(pt[0]), round(pt[1])])));
+    // 10m brings many more real lakes, so the floor can come down.
+    if (Math.abs(a / 2) < 0.004) continue;
+    // 10m shorelines carry far more detail than a lake a few pixels wide can
+    // show; thinning them keeps the shapes and drops two thirds of the bytes.
+    const simplified = rings
+      .map((r) => thin(r.map((pt) => [round(pt[0]), round(pt[1])]), 0.008))
+      .filter((r) => r.length >= 4);
+    if (simplified.length) lakes.push(simplified);
   }
 }
 
