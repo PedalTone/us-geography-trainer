@@ -187,8 +187,8 @@
     el.progressTotal.textContent = '/ ' + game.queue.length;
     say(
       game.mode === 'states'
-        ? 'Click the state on the map. Three tries each.'
-        : 'Click where the city is. Three tries each.'
+        ? 'Click the state on the map. Three tries each. Zoom in for more details.'
+        : 'Click where the city is. Three tries each. Zoom in for more details.'
     );
     render();
     map.resize();
