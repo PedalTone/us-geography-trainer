@@ -521,10 +521,11 @@
     }
     ctx.clip();
 
-    // Draw the hypsometric tint (elevation colors) clipped to the border
+    // Draw the full relief (hypso + hillshade) clipped to the border, just like the main map
     if (this.hypsoReady && this.hypso) {
       var bounds = window.US_RELIEF.bounds;
       ctx.imageSmoothingQuality = 'high';
+      // Draw hypso (elevation colors)
       ctx.drawImage(
         this.hypso,
         bounds.x0 * k + tx,
@@ -532,6 +533,20 @@
         (bounds.x1 - bounds.x0) * k,
         (bounds.y1 - bounds.y0) * k
       );
+    }
+    if (this.reliefReady && this.relief) {
+      var bounds = window.US_RELIEF.bounds;
+      ctx.imageSmoothingQuality = 'high';
+      // Draw relief (shaded relief with overlay blend)
+      ctx.globalCompositeOperation = 'overlay';
+      ctx.drawImage(
+        this.relief,
+        bounds.x0 * k + tx,
+        bounds.y0 * k + ty,
+        (bounds.x1 - bounds.x0) * k,
+        (bounds.y1 - bounds.y0) * k
+      );
+      ctx.globalCompositeOperation = 'source-over';
     }
 
     // Draw outline stroke on top
@@ -557,12 +572,18 @@
     ctx.globalAlpha = 1;
     ctx.stroke();
 
-    // Store for redraw when hypso loads
+    // Store for redraw when images load
     this.markCanvas = canvas;
     this.markColor = color;
     if (!this.hypsoReady && this.hypso) {
       this.hypso.onload = function () {
         self.hypsoReady = true;
+        self.drawMark(self.markCanvas, self.markColor);
+      };
+    }
+    if (!this.reliefReady && this.relief) {
+      this.relief.onload = function () {
+        self.reliefReady = true;
         self.drawMark(self.markCanvas, self.markColor);
       };
     }
