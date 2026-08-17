@@ -422,7 +422,7 @@
     showOverlay(
       '<canvas class="hero-mark" id="heroMark"></canvas>' +
         '<p class="eyebrow">Geography trainer</p>' +
-        '<h2 class="title">Learn the US, <em>for real!</em></h2>' +
+        '<h2 class="title">Learn the U.S., <em>for real!</em></h2>' +
         '<hr class="title-rule">' +
         '<p class="tagline">No state lines to trace — just terrain, rivers and coast, the way the ' +
         'country actually looks. Find each place by its geography and the borders fill in behind you.</p>' +

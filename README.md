@@ -1,6 +1,6 @@
-# Learn the US, for real!
+# Learn the U.S., for real!
 
-A browser game for learning the lower 48 states and the biggest US cities by
+A browser game for learning the lower 48 states and the biggest U.S. cities by
 clicking them on a map. No frameworks, no build step and nothing loaded from a
 third party — just HTML, CSS, three plain JavaScript files and its own map data,
 so it runs on GitHub Pages as-is.
