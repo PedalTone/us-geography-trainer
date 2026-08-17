@@ -5,11 +5,16 @@
  *
  *   node tools/build-features.mjs <ne-geojson-dir>
  *
- * Expects these Natural Earth 50m files in the directory (public domain,
+ * Expects these Natural Earth files in the directory (public domain,
  * https://github.com/nvkelso/natural-earth-vector):
  *   ne_50m_geography_regions_polys, ne_50m_geography_regions_points,
- *   ne_50m_geography_regions_elevation_points, ne_50m_geography_marine_polys,
- *   ne_50m_rivers_lake_centerlines, ne_50m_lakes
+ *   ne_50m_geography_marine_polys, ne_50m_rivers_lake_centerlines, ne_50m_lakes
+ * and optionally, for far more detail:
+ *   ne_10m_geography_regions_elevation_points  (peaks)
+ *   ne_10m_rivers_north_america                (tributaries)
+ *
+ * National parks come from Wikidata as parks.json — see the README for the
+ * one-line query that produces it.
  *
  * Output is data/features.js. Region polygons are kept (simplified) so a future
  * mode can ask the player to find the Rockies, not just read the label.
@@ -18,6 +23,29 @@ import { readFileSync, writeFileSync } from 'node:fs';
 
 const DIR = (process.argv[2] || '.').replace(/\/$/, '');
 const load = (n) => JSON.parse(readFileSync(`${DIR}/${n}.geojson`, 'utf8'));
+const loadIf = (n) => {
+  try {
+    return load(n);
+  } catch (e) {
+    console.log(`  (optional ${n} not found — skipping)`);
+    return null;
+  }
+};
+
+const R_MILES = 3958.8;
+const milesBetween = (a, b) => {
+  const dLat = (b[1] - a[1]) * (Math.PI / 180);
+  const dLon = (b[0] - a[0]) * (Math.PI / 180);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(a[1] * (Math.PI / 180)) * Math.cos(b[1] * (Math.PI / 180)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R_MILES * Math.asin(Math.min(1, Math.sqrt(h)));
+};
+const runMiles = (pts) => {
+  let d = 0;
+  for (let i = 1; i < pts.length; i++) d += milesBetween(pts[i - 1], pts[i]);
+  return d;
+};
 
 const BOX = { w: -126, e: -66, s: 23.5, n: 50.5 };
 const round = (v) => Math.round(v * 1e3) / 1e3;
@@ -265,40 +293,75 @@ for (const f of polys.features) {
   });
 }
 
-/* rivers: label set along the flow */
-const RIVER_TIER1 = /Mississippi|Missouri|Ohio|Colorado|Columbia|Rio Grande|Arkansas|Snake|Tennessee|Red River|Rio Bravo/i;
+/* rivers: label set along the flow, ranked by how long the river actually is */
+
+const RIVER_TIER1 = new Set([
+  'Mississippi', 'Missouri', 'Ohio', 'Colorado', 'Columbia', 'Rio Grande', 'Arkansas',
+  'Snake', 'Tennessee', 'Rio Bravo',
+]);
+const riverRuns = new Map(); // name -> { miles, runs }
+
+function collectRiver(name, line) {
+  const inside = line.filter(([lon, lat]) => inBox(lon, lat));
+  if (inside.length < 6) return;
+  const e = riverRuns.get(name) || { miles: 0, runs: [] };
+  e.miles += runMiles(inside);
+  e.runs.push(inside);
+  riverRuns.set(name, e);
+}
+
 const rivers = load('ne_50m_rivers_lake_centerlines');
-const seenRiver = new Map();
 for (const f of rivers.features) {
   const p = f.properties;
-  const name = p.name;
-  // Forks and branches are noise at this scale.
-  if (!name || SKIP.has(name) || (p.scalerank ?? 99) > 6) continue;
-  if (/\bfork\b|\bbranch\b|\bdes\b/i.test(name)) continue;
-  const lines = f.geometry.type === 'MultiLineString' ? f.geometry.coordinates : [f.geometry.coordinates];
-  for (const line of lines) {
-    const inside = line.filter(([lon, lat]) => inBox(lon, lat));
-    if (inside.length < 8) continue;
-    // Keep the longest run per river so we get one label, not twenty.
-    const prev = seenRiver.get(name);
-    if (prev && prev.length >= inside.length) continue;
-    seenRiver.set(name, inside);
+  if (!p.name || SKIP.has(p.name) || (p.scalerank ?? 99) > 6) continue;
+  if (/\bfork\b|\bbranch\b|\bdes\b/i.test(p.name)) continue;
+  const lines =
+    f.geometry.type === 'MultiLineString' ? f.geometry.coordinates : [f.geometry.coordinates];
+  for (const line of lines) collectRiver(p.name, line);
+}
+
+// The 10m North America file is the tributary network. Its scalerank is a
+// detail level, not importance, so length decides which tier a river lands in.
+const extraRivers = loadIf('ne_10m_rivers_north_america');
+if (extraRivers) {
+  for (const f of extraRivers.features) {
+    const p = f.properties;
+    if (!f.geometry || !p.name || SKIP.has(p.name)) continue;
+    if (/\bfork\b|\bbranch\b|\bdes\b/i.test(p.name)) continue;
+    const lines =
+      f.geometry.type === 'MultiLineString' ? f.geometry.coordinates : [f.geometry.coordinates];
+    for (const line of lines) collectRiver(p.name, line);
   }
 }
-for (const [name, pts] of seenRiver) {
+
+const MIN_RIVER_MILES = 120;
+let riverCount = 0;
+for (const [name, e] of riverRuns) {
+  if (e.miles < MIN_RIVER_MILES) continue;
+  // Label the longest continuous run, so the name sits on real water.
+  const pts = e.runs.reduce((a, b) => (b.length > a.length ? b : a), e.runs[0]);
+  if (pts.length < 6) continue;
+  if (!nearUS(pts[Math.floor(pts.length / 2)][0], pts[Math.floor(pts.length / 2)][1], 0.35)) continue;
+
   const mid = Math.floor(pts.length / 2);
-  if (!nearUS(pts[mid][0], pts[mid][1], 0.35)) continue;
   const w = Math.max(2, Math.floor(pts.length * 0.06));
   const a = project(...pts[Math.max(0, mid - w)]);
   const b = project(...pts[Math.min(pts.length - 1, mid + w)]);
+
+  const tier = RIVER_TIER1.has(name) ? 1 : e.miles >= 320 ? 2 : e.miles >= 200 ? 3 : 4;
+  // Not everything on the river layer is a "River" — a Draw, Wash or Bayou
+  // already names itself.
+  const WATER_WORD = /(river|r\.|creek|draw|wash|bayou|slough|fork|brook|run|canal|arroyo|kill)$/i;
   features.push({
     kind: 'river',
-    name: /river|r\.$/i.test(name) ? name : name + ' R.',
+    name: WATER_WORD.test(name) ? name : name + ' R.',
     at: [round(pts[mid][0]), round(pts[mid][1])],
     angle: readableAngle(Math.atan2(b[1] - a[1], b[0] - a[0])),
-    tier: RIVER_TIER1.test(name) ? 1 : 2,
+    tier,
   });
+  riverCount++;
 }
+console.log(`rivers labelled: ${riverCount} of ${riverRuns.size} named`);
 
 /* lakes */
 const lakes = load('ne_50m_lakes');
@@ -337,19 +400,26 @@ for (const f of marine.features) {
 }
 
 /* peaks and capes: point features, kept for the zoomed-in view */
-const peaks = load('ne_50m_geography_regions_elevation_points');
+
+const peaks = loadIf('ne_10m_geography_regions_elevation_points') ||
+  load('ne_50m_geography_regions_elevation_points');
+let peakCount = 0;
 for (const f of peaks.features) {
   const [lon, lat] = f.geometry.coordinates;
   if (!f.properties.name || !inBox(lon, lat) || !nearUS(lon, lat, 0.2)) continue;
+  const elevation = f.properties.elevation || 0;
   features.push({
     kind: f.properties.featurecla === 'depression' ? 'low' : 'peak',
     name: f.properties.name,
     at: [round(lon), round(lat)],
     angle: 0,
-    tier: 3,
-    elev: f.properties.elevation || null,
+    // The really big ones are landmarks; the rest wait for a deeper zoom.
+    tier: elevation >= 4000 ? 2 : elevation >= 3000 ? 3 : 4,
+    elev: elevation || null,
   });
+  peakCount++;
 }
+console.log(`peaks: ${peakCount}`);
 
 const points = load('ne_50m_geography_regions_points');
 for (const f of points.features) {
@@ -358,6 +428,37 @@ for (const f of points.features) {
   const [lon, lat] = f.geometry.coordinates;
   if (!f.properties.name || !inBox(lon, lat) || !nearUS(lon, lat, 0.6)) continue;
   features.push({ kind: 'cape', name: f.properties.name, at: [round(lon), round(lat)], angle: 0, tier: 3 });
+}
+
+/* national parks, from Wikidata */
+
+let parkJson = null;
+try {
+  parkJson = JSON.parse(readFileSync(`${DIR}/parks.json`, 'utf8'));
+} catch (e) {
+  console.log('  (optional parks.json not found — skipping national parks)');
+}
+if (parkJson) {
+  // Wikidata returns a row per statement, so the same park can appear twice.
+  const seenPark = new Set();
+  let parkCount = 0;
+  for (const row of parkJson.results.bindings) {
+    const m = row.coord.value.match(/Point\(([-\d.]+) ([-\d.]+)\)/);
+    if (!m) continue;
+    const lon = +m[1];
+    const lat = +m[2];
+    const raw = row.parkLabel.value;
+    const name = raw
+      .replace(/ National Park and Preserve$/, ' NP')
+      .replace(/ National Park$/, ' NP')
+      .replace(/ National and State Parks$/, ' NP');
+    if (seenPark.has(name)) continue;
+    if (!inBox(lon, lat) || !nearUS(lon, lat, 0.3)) continue;
+    seenPark.add(name);
+    features.push({ kind: 'park', name, at: [round(lon), round(lat)], angle: 0, tier: 3 });
+    parkCount++;
+  }
+  console.log(`national parks: ${parkCount}`);
 }
 
 // "Fort Peck Lake" and "Ft. Peck Lake" are the same lake twice.
@@ -383,7 +484,7 @@ const MARQUEE = [
   'Snake R.', 'Arkansas R.', 'Tennessee R.', 'Chesapeake Bay', 'Coastal Plain',
   'Central Lowland', 'Gulf of Maine',
 ];
-const KIND_RANK = { river: 0, range: 1, lake: 2, sea: 3, desert: 4, plain: 5, peak: 6, low: 6, cape: 7 };
+const KIND_RANK = { river: 0, range: 1, lake: 2, sea: 3, desert: 4, plain: 5, peak: 6, low: 6, park: 7, cape: 8 };
 const rank = (f) => {
   const i = MARQUEE.indexOf(f.name);
   return i === -1 ? 100 + (KIND_RANK[f.kind] ?? 9) : i;
@@ -393,7 +494,7 @@ features.sort((a, b) => a.tier - b.tier || rank(a) - rank(b) || a.name.localeCom
 const byKind = {};
 for (const f of features) byKind[f.kind] = (byKind[f.kind] || 0) + 1;
 console.log('features:', features.length, JSON.stringify(byKind));
-for (const t of [1, 2, 3]) {
+for (const t of [1, 2, 3, 4]) {
   console.log(`  tier ${t}: ` + features.filter((f) => f.tier === t).map((f) => f.name).join(', '));
 }
 

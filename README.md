@@ -15,8 +15,18 @@ you get it right. Finish all 48 to fill in the map.
 
 Every feature is **labelled all the time** — Rocky Mountains, Great Plains,
 Mississippi R., Colorado Plateau, Lake Superior and the rest — so you learn the
-landmarks while you play. Tier one shows at a glance; smaller plateaus, lakes
-and rivers appear as you zoom, and peaks and capes deeper still.
+landmarks while you play. Around 310 features are named in four tiers, and
+zooming in reveals the next one:
+
+| Tier | Appears at | What shows up |
+| --- | --- | --- |
+| 1 | always | the main stems, big ranges, the Great Lakes, Gulf of Mexico |
+| 2 | 1.4x | major tributaries, plateaus, the 4,000 m peaks |
+| 3 | 2.2x | smaller rivers and lakes, **national parks**, capes |
+| 4 | 3.4x | the rest of the river network and the smaller summits |
+
+That covers 163 named rivers, 42 peaks and 48 national parks, plus ranges,
+plateaus, deserts, lakes, gulfs and capes.
 
 The **Terrain** switch turns the whole geography layer — relief, rivers, lakes
 and labels — off if you want the bare silhouette instead. The setting sticks.
@@ -105,7 +115,9 @@ tools/build-*.mjs      regenerate the data files (only needed to change data)
 - Cities: [plotly datasets](https://github.com/plotly/datasets)
   `2014_us_cities.csv`
 - Rivers and lakes: [Natural Earth](https://github.com/nvkelso/natural-earth-vector)
-  50m (public domain)
+  50m centrelines for the main stems, 10m North America for the tributary
+  network, 10m elevation points for the peaks (public domain)
+- National parks: [Wikidata](https://query.wikidata.org/) (CC0)
 - Elevation: [AWS terrain tiles](https://registry.opendata.aws/terrain-tiles/)
   (public, no key)
 
@@ -137,9 +149,24 @@ node tools/build-data.mjs /tmp/states-10m.json /tmp/cities.csv
 ```
 
 ```bash
+node tools/build-water.mjs <rivers.geojson> <lakes.geojson> <rivers_north_america.geojson>
 node tools/build-relief.mjs --zoom 6 --width 1920
 node tools/build-features.mjs <dir-with-natural-earth-geojson>
 ```
+
+National parks come from Wikidata, saved as `parks.json` in the same directory
+(`build-features.mjs` skips them if it isn't there):
+
+```bash
+curl -sG https://query.wikidata.org/sparql -H 'Accept: application/sparql-results+json' -o parks.json --data-urlencode 'query=SELECT ?parkLabel ?coord WHERE { ?park wdt:P31 wd:Q34918903 . ?park wdt:P625 ?coord . SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } }'
+```
+
+Two ranking notes. The 10m North America river file is a *detail* layer, not an
+importance one — its scalerank puts the Mississippi last — so tributaries are
+ranked by their own length instead, which decides both how heavily they draw and
+which tier their label lands in. Rivers under 120 miles are dropped entirely;
+below that the map turns to fuzz and the file doubles. Peaks are tiered by
+elevation, so Whitney and Elbert show up long before the 2,000 m summits.
 
 Feature labels are placed at draw time, not baked in: each one is measured,
 turned into a few small boxes along its baseline — a diagonal label like

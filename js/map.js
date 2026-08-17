@@ -481,13 +481,15 @@
     peak: { color: '--label-peak', caps: false, track: 0, size: 10, italic: false, marker: 'peak' },
     low: { color: '--label-peak', caps: false, track: 0, size: 10, italic: false, marker: 'peak' },
     cape: { color: '--label-peak', caps: false, track: 0, size: 10, italic: false, marker: 'dot' },
+    park: { color: '--label-park', caps: false, track: 0, size: 10, italic: false, marker: 'tree' },
   };
 
   /* Tier 1 is always legible; the rest earn their place as you zoom in. */
   function tierVisible(tier, scale) {
     if (tier === 1) return true;
-    if (tier === 2) return scale >= 1.45;
-    return scale >= 2.4;
+    if (tier === 2) return scale >= 1.4;
+    if (tier === 3) return scale >= 2.2;
+    return scale >= 3.4;
   }
 
   function overlaps(box, placed) {
@@ -597,6 +599,15 @@
         ctx.beginPath();
         ctx.arc(0, 3, 2, 0, Math.PI * 2);
         ctx.fill();
+      } else if (st.marker === 'tree') {
+        // A little conifer, so parks read differently from peaks at a glance.
+        ctx.beginPath();
+        ctx.moveTo(0, -1);
+        ctx.lineTo(-3, 4);
+        ctx.lineTo(3, 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillRect(-0.7, 4, 1.4, 2);
       }
       ctx.restore();
     }
