@@ -508,10 +508,22 @@
     var tx = (w - (b.x1 - b.x0) * k) / 2 - b.x0 * k;
     var ty = (h - (b.y1 - b.y0) * k) / 2 - b.y0 * k;
 
-    // Draw the hypsometric tint (elevation colors) if available
+    // Create clipping path from the outline
+    ctx.beginPath();
+    for (var i = 0; i < this.outline.length; i++) {
+      var line = this.outline[i];
+      for (var j = 0; j < line.length; j++) {
+        var x = line[j][0] * k + tx;
+        var y = line[j][1] * k + ty;
+        if (j === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+    }
+    ctx.clip();
+
+    // Draw the hypsometric tint (elevation colors) clipped to the border
     if (this.hypsoReady && this.hypso) {
       var bounds = window.US_RELIEF.bounds;
-      ctx.save();
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(
         this.hypso,
@@ -520,9 +532,9 @@
         (bounds.x1 - bounds.x0) * k,
         (bounds.y1 - bounds.y0) * k
       );
-      ctx.restore();
     }
 
+    // Draw outline stroke on top
     ctx.beginPath();
     for (var i = 0; i < this.outline.length; i++) {
       var line = this.outline[i];
