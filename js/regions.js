@@ -1,39 +1,53 @@
-// Regions UI Handler
-// Displays and manages the US regions educational panel
+// Regions UI Handler - Simple modal toggle
 
 var regionsUI = (function() {
-  var regionsPanel = null;
-  var regionsList = null;
-  var regionsBtn = null;
-  var closeBtn = null;
+  var initialized = false;
 
   function init() {
-    regionsPanel = document.getElementById('regionsPanel');
-    regionsList = document.getElementById('regionsList');
-    regionsBtn = document.getElementById('regionsBtn');
-    closeBtn = document.getElementById('closeRegionsBtn');
+    if (initialized) return;
+    initialized = true;
 
-    if (!regionsPanel || !regionsBtn) {
+    var regionsBtn = document.getElementById('regionsBtn');
+    var regionsPanel = document.getElementById('regionsPanel');
+    var closeBtn = document.getElementById('closeRegionsBtn');
+    var regionsList = document.getElementById('regionsList');
+
+    if (!regionsBtn || !regionsPanel) {
       console.error('Regions: Missing required elements');
       return;
     }
 
-    regionsBtn.addEventListener('click', show);
-    if (closeBtn) {
-      closeBtn.addEventListener('click', hide);
+    // Build the regions list
+    if (regionsList && regionsList.children.length === 0) {
+      buildRegionsList(regionsList);
     }
-    regionsPanel.addEventListener('click', function(e) {
-      if (e.target === regionsPanel) hide();
+
+    // Click handler for Regions button
+    regionsBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      regionsPanel.classList.add('show');
     });
 
-    buildRegionsList();
-    console.log('Regions UI initialized');
+    // Click handler for close button
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        regionsPanel.classList.remove('show');
+      });
+    }
+
+    // Click on overlay background closes it
+    regionsPanel.addEventListener('click', function(e) {
+      if (e.target === regionsPanel) {
+        regionsPanel.classList.remove('show');
+      }
+    });
+
+    console.log('Regions UI ready');
   }
 
-  function buildRegionsList() {
-    if (!regionsList) return;
-
-    regionsList.innerHTML = '';
+  function buildRegionsList(container) {
+    container.innerHTML = '';
 
     Object.entries(REGIONS).forEach(function([regionName, regionData]) {
       var regionDiv = document.createElement('div');
@@ -56,13 +70,12 @@ var regionsUI = (function() {
       var statesList = document.createElement('div');
       statesList.className = 'states-list';
 
-      // Show states in this region
+      // Add states
       regionData.states.forEach(function(stateName) {
         var stateTag = document.createElement('span');
         stateTag.className = 'state-tag';
         stateTag.textContent = stateName;
 
-        // Add note if state has ambiguous regional identity
         if (REGION_NOTES[stateName]) {
           stateTag.title = REGION_NOTES[stateName];
           stateTag.classList.add('ambiguous');
@@ -78,29 +91,11 @@ var regionsUI = (function() {
       regionDiv.appendChild(colorBar);
       regionDiv.appendChild(regionContent);
 
-      regionsList.appendChild(regionDiv);
+      container.appendChild(regionDiv);
     });
   }
 
-  function show() {
-    if (regionsPanel) {
-      regionsPanel.classList.add('show');
-      console.log('Regions panel shown');
-    }
-  }
-
-  function hide() {
-    if (regionsPanel) {
-      regionsPanel.classList.remove('show');
-      console.log('Regions panel hidden');
-    }
-  }
-
-  return {
-    init: init,
-    show: show,
-    hide: hide
-  };
+  return { init: init };
 })();
 
 // Initialize when DOM is ready
