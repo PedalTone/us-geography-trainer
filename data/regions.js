@@ -73,23 +73,43 @@ var REGION_NOTES = {
   'Idaho': 'Mountain state with ties to both West Coast and Mountain regions.'
 };
 
+// Flat state -> region lookup, built once. The renderer asks for a colour for
+// every state on every frame, so this must not be a scan over all six regions.
+var STATE_REGION = {};
+Object.keys(REGIONS).forEach(function (regionName) {
+  REGIONS[regionName].states.forEach(function (stateName) {
+    STATE_REGION[stateName] = regionName;
+  });
+});
+
 // Get the region for a given state
 function getRegionForState(stateName) {
-  for (const [regionName, regionData] of Object.entries(REGIONS)) {
-    if (regionData.states.includes(stateName)) {
-      return regionName;
-    }
-  }
-  return null;
+  return STATE_REGION[stateName] || null;
 }
 
 // Get all states in a region
 function getStatesInRegion(regionName) {
-  return REGIONS[regionName]?.states || [];
+  return REGIONS[regionName] ? REGIONS[regionName].states : [];
 }
 
 // Get color for a state based on its region
 function getStateRegionColor(stateName) {
-  const region = getRegionForState(stateName);
-  return REGIONS[region]?.color || '#999999';
+  var region = STATE_REGION[stateName];
+  return region ? REGIONS[region].color : '#999999';
+}
+
+// Map fills sit over shaded relief, so the region colours are painted
+// translucent — the terrain underneath is the whole point of the map.
+var REGION_FILL = {};
+Object.keys(REGIONS).forEach(function (regionName) {
+  var hex = REGIONS[regionName].color;
+  var r = parseInt(hex.slice(1, 3), 16);
+  var g = parseInt(hex.slice(3, 5), 16);
+  var b = parseInt(hex.slice(5, 7), 16);
+  REGION_FILL[regionName] = 'rgba(' + r + ',' + g + ',' + b + ',.52)';
+});
+
+function getStateRegionFill(stateName) {
+  var region = STATE_REGION[stateName];
+  return region ? REGION_FILL[region] : null;
 }

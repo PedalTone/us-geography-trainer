@@ -779,6 +779,21 @@ body {
   color: var(--ink);
 }
 
+.regions-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 18px;
+}
+
+.regions-hint {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-dim);
+}
+
 .regions-list {
   display: flex;
   flex-direction: column;

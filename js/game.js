@@ -96,6 +96,8 @@
     resetView: document.getElementById('resetView'),
     terrainBtn: document.getElementById('terrainBtn'),
     peekBtn: document.getElementById('peekBtn'),
+    regionsBtn: document.getElementById('regionsBtn'),
+    regionPaintBtn: document.getElementById('regionPaintBtn'),
     streak: document.getElementById('streak'),
     streakCount: document.getElementById('streakCount'),
     toast: document.getElementById('toast'),
@@ -671,6 +673,41 @@
   el.peekBtn.addEventListener('click', function () {
     setPeek(!map.peek);
   });
+
+  // Shades every state by its region. Lives here rather than in regions.js
+  // because that file cannot see this `map` — the canvas carries id="map", so
+  // a bare `map` out there resolves to the element, not the view.
+  function setRegionColors(on) {
+    map.regionColors = on;
+    if (el.regionPaintBtn) {
+      el.regionPaintBtn.classList.toggle('is-on', on);
+      el.regionPaintBtn.setAttribute('aria-checked', on ? 'true' : 'false');
+    }
+    if (el.regionsBtn) el.regionsBtn.classList.toggle('is-on', on);
+    try {
+      localStorage.setItem('usgeo.regionColors', on ? '1' : '0');
+    } catch (e) {
+      /* not fatal */
+    }
+    map.requestDraw();
+  }
+
+  if (el.regionPaintBtn) {
+    el.regionPaintBtn.addEventListener('click', function () {
+      var turningOn = !map.regionColors;
+      setRegionColors(turningOn);
+      // Reveal the map, otherwise the panel scrim hides what just changed.
+      if (turningOn && typeof regionsUI !== 'undefined') regionsUI.closePanel();
+    });
+
+    var savedRegionColors = null;
+    try {
+      savedRegionColors = localStorage.getItem('usgeo.regionColors');
+    } catch (e) {
+      /* not fatal */
+    }
+    setRegionColors(savedRegionColors === '1');
+  }
 
   var savedTerrain = null;
   try {

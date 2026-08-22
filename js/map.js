@@ -94,6 +94,7 @@
     this.terrain = true;
     this.hardMode = false;
     this.peek = false;
+    this.regionColors = false;
     // Set when a round ends so the finished map can be reviewed in full, even
     // though hard mode hid everything while playing.
     this.revealAll = false;
@@ -814,6 +815,17 @@
         a = fadeAlpha(solved || missed, now, missed ? 2200 : 700, 15000);
         if (a > 0) live = true;
       }
+      // Region colouring is a study overlay, so it paints under the answer
+      // fills — a solved or missed state still reads as solved or missed.
+      if (this.regionColors) {
+        var regionFill = getStateRegionFill(s.name);
+        if (regionFill) {
+          ctx.save();
+          ctx.fillStyle = regionFill;
+          ctx.fill(path, 'evenodd');
+          ctx.restore();
+        }
+      }
       if ((solved || missed) && a > 0) {
         ctx.save();
         ctx.globalAlpha = a;
@@ -823,9 +835,10 @@
       }
       // In hard mode the border fades out with the fill: leaving it drawn would
       // hand the player every neighbouring outline for free.
-      if (showAllBorders || this.peek || ((solved || missed) && a > 0)) {
+      var forceBorders = showAllBorders || this.peek || this.regionColors;
+      if (forceBorders || ((solved || missed) && a > 0)) {
         ctx.save();
-        ctx.globalAlpha = showAllBorders || this.peek ? 1 : a;
+        ctx.globalAlpha = forceBorders ? 1 : a;
         ctx.strokeStyle = BORDER;
         ctx.lineWidth = 1;
         ctx.stroke(path);

@@ -1,6 +1,6 @@
 // Regions UI Handler - US Regional Classifications
 
-(function() {
+var regionsUI = (function() {
   // Wait for DOM to be ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
@@ -8,11 +8,17 @@
     init();
   }
 
+  function closePanel() {
+    var p = document.getElementById('regionsPanel');
+    if (p) p.classList.remove('show');
+  }
+
   function init() {
     const regionsBtn = document.getElementById('regionsBtn');
     const regionsPanel = document.getElementById('regionsPanel');
     const closeBtn = document.getElementById('closeRegionsBtn');
     const regionsList = document.getElementById('regionsList');
+    const paintBtn = document.getElementById('regionPaintBtn');
 
     if (!regionsBtn || !regionsPanel || !regionsList) {
       console.error('Regions: Missing DOM elements');
@@ -21,6 +27,16 @@
 
     // Build regions list once
     buildRegionsList(regionsList);
+
+    // The paint-the-map toggle needs the MapView, which lives in game.js's
+    // closure — note `map` here would resolve to the canvas element, since it
+    // carries id="map". game.js wires that button and calls back through
+    // regionsUI.closePanel() so turning it on reveals the map underneath.
+    if (paintBtn) {
+      paintBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+      });
+    }
 
     // Show regions panel
     regionsBtn.addEventListener('click', function(e) {
@@ -44,8 +60,6 @@
         regionsPanel.classList.remove('show');
       }
     });
-
-    console.log('Regions panel initialized successfully');
   }
 
   function buildRegionsList(container) {
@@ -95,4 +109,6 @@
       container.appendChild(regionDiv);
     }
   }
+
+  return { closePanel: closePanel };
 })();
