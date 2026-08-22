@@ -742,6 +742,13 @@ body {
 
 /* ---- regions panel ---- */
 
+/* The title screen scrim is fixed at z-index 20 and covers the topbar, so the
+   Regions button has to sit above it to stay clickable before a game starts. */
+#regionsBtn {
+  position: relative;
+  z-index: 30;
+}
+
 .regions-panel {
   position: fixed;
   inset: 0;
