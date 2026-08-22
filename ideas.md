@@ -1,28 +1,19 @@
 # Geography Game Ideas
 
-## US Regions Educational Feature (v32 - In Progress)
+## US Regions Educational Feature (v32 - Shipped)
 
-### Status
-✅ **Implemented**: 
-- Regional classification data (6 regions: Northeast, Midwest, South, Southwest, West, Alaska & Hawaii)
-- UI button in topbar
-- Color-coded regions with descriptions
-- State listings with ambiguous-region highlighting
-- CSS styling and modal structure
+Six regions (Northeast, Midwest, South, Southwest, West, Alaska & Hawaii), each
+with a color bar, description, and its state list. States with contested
+regional identity (Ohio, Missouri, Kentucky, Oklahoma, West Virginia, Colorado,
+Montana, Idaho) render in gold with a tooltip explaining the ambiguity.
 
-⚠️ **Issue**: Modal display not working in browser - the panel HTML/CSS/JS are present but the show/hide toggle isn't displaying the modal. Data and structure are complete; needs debugging of the display mechanism.
+Files: `data/regions.js`, `js/regions.js`, plus the Regions button in
+`index.html` and `.regions-panel` styles in `style.css`.
 
-### How to Fix
-- Check browser CSS rendering of `.regions-panel.show` class
-- Verify fixed positioning and z-index are working properly
-- Consider alternative modal implementation if current approach has conflicts
-
-### What's There
-- `/data/regions.js`: Complete region definitions with state lists
-- `/js/regions.js`: Event handlers and modal logic
-- `/index.html`: Regions button and modal panel structure
-- `/style.css`: Full styling including `.regions-panel` and nested elements
-- All deployed to v32 on GitHub Pages
+**Gotcha worth remembering:** the title screen overlay is `position: fixed;
+inset: 0; z-index: 20`, so it covers the topbar and swallows clicks on anything
+there. Any new topbar control needs a z-index above 20 or it will look enabled
+but do nothing.
 
 ---
 
