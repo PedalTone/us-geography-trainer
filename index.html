@@ -19,6 +19,7 @@
               title="Shaded relief, rivers, lakes and their names"><span class="track"><span class="knob"></span></span>Terrain</button>
       <button class="switch switch-cool" id="peekBtn" role="switch" aria-checked="false"
               title="Show all state boundaries"><span class="track"><span class="knob"></span></span>Peek</button>
+      <button class="btn ghost" id="regionsBtn" title="Learn about US regions">Regions</button>
       <nav class="modes" id="modes">
         <button class="mode-btn is-on" data-mode="states">States</button>
         <button class="mode-btn" data-mode="cities">Cities</button>
@@ -47,6 +48,11 @@
 
     <div class="overlay" id="overlay">
       <div class="panel" id="panel"></div>
+      <div class="panel regions-panel" id="regionsPanel" style="display:none;">
+        <button class="close-btn" id="closeRegionsBtn" aria-label="Close regions">✕</button>
+        <h2>US Regions</h2>
+        <div class="regions-list" id="regionsList"></div>
+      </div>
     </div>
   </div>
 
@@ -69,8 +75,10 @@
 <script src="data/water.js?v=30"></script>
 <script src="data/features.js?v=30"></script>
 <script src="data/relief.js?v=30"></script>
+<script src="data/regions.js?v=30"></script>
 <script src="js/geo.js?v=30"></script>
 <script src="js/map.js?v=30"></script>
+<script src="js/regions.js?v=30"></script>
 <script src="js/game.js?v=30"></script>
 </body>
 </html>
