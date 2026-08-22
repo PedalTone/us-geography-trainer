@@ -1,5 +1,31 @@
 # Geography Game Ideas
 
+## US Regions Educational Feature (v32 - In Progress)
+
+### Status
+✅ **Implemented**: 
+- Regional classification data (6 regions: Northeast, Midwest, South, Southwest, West, Alaska & Hawaii)
+- UI button in topbar
+- Color-coded regions with descriptions
+- State listings with ambiguous-region highlighting
+- CSS styling and modal structure
+
+⚠️ **Issue**: Modal display not working in browser - the panel HTML/CSS/JS are present but the show/hide toggle isn't displaying the modal. Data and structure are complete; needs debugging of the display mechanism.
+
+### How to Fix
+- Check browser CSS rendering of `.regions-panel.show` class
+- Verify fixed positioning and z-index are working properly
+- Consider alternative modal implementation if current approach has conflicts
+
+### What's There
+- `/data/regions.js`: Complete region definitions with state lists
+- `/js/regions.js`: Event handlers and modal logic
+- `/index.html`: Regions button and modal panel structure
+- `/style.css`: Full styling including `.regions-panel` and nested elements
+- All deployed to v32 on GitHub Pages
+
+---
+
 ## Multiplayer Mode (Future Enhancement)
 
 ### Overview
