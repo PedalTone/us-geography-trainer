@@ -743,10 +743,26 @@ body {
 /* ---- regions panel ---- */
 
 .regions-panel {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(8, 13, 19, .82);
+  backdrop-filter: blur(3px);
+  z-index: 999;
+}
+
+.regions-panel.show {
+  display: flex;
+}
+
+.regions-panel > .panel {
   max-width: 600px;
   max-height: 85vh;
   overflow-y: auto;
-  padding: 24px !important;
+  padding: 24px;
 }
 
 .regions-panel h2 {

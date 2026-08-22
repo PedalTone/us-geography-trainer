@@ -6,16 +6,14 @@ var regionsUI = (function() {
   var regionsList = null;
   var regionsBtn = null;
   var closeBtn = null;
-  var overlay = null;
 
   function init() {
     regionsPanel = document.getElementById('regionsPanel');
     regionsList = document.getElementById('regionsList');
     regionsBtn = document.getElementById('regionsBtn');
     closeBtn = document.getElementById('closeRegionsBtn');
-    overlay = document.getElementById('overlay');
 
-    if (!regionsPanel || !regionsBtn || !overlay) {
+    if (!regionsPanel || !regionsBtn) {
       console.error('Regions: Missing required elements');
       return;
     }
@@ -24,8 +22,8 @@ var regionsUI = (function() {
     if (closeBtn) {
       closeBtn.addEventListener('click', hide);
     }
-    overlay.addEventListener('click', function(e) {
-      if (e.target === overlay) hide();
+    regionsPanel.addEventListener('click', function(e) {
+      if (e.target === regionsPanel) hide();
     });
 
     buildRegionsList();
@@ -85,17 +83,15 @@ var regionsUI = (function() {
   }
 
   function show() {
-    if (regionsPanel && overlay) {
-      overlay.style.display = 'flex';
-      regionsPanel.style.display = 'flex';
+    if (regionsPanel) {
+      regionsPanel.classList.add('show');
       console.log('Regions panel shown');
     }
   }
 
   function hide() {
-    if (regionsPanel && overlay) {
-      overlay.style.display = 'none';
-      regionsPanel.style.display = 'none';
+    if (regionsPanel) {
+      regionsPanel.classList.remove('show');
       console.log('Regions panel hidden');
     }
   }
