@@ -425,6 +425,15 @@ body {
 }
 .burst.hit .burst-head { color: var(--good); }
 
+/* A wrong guess with clues still to come: amber, so it reads as "keep going"
+   rather than the red of a question you have lost. */
+.burst.warn .burst-card {
+  border-color: rgba(251, 191, 36, .5);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .5), 0 0 34px rgba(251, 191, 36, .18);
+}
+.burst.warn .burst-head { color: var(--warm); }
+.burst.warn .burst-note { color: var(--ink); }
+
 .burst.miss .burst-card {
   border-color: rgba(251, 113, 133, .5);
   box-shadow: 0 18px 50px rgba(0, 0, 0, .5), 0 0 34px rgba(251, 113, 133, .2);

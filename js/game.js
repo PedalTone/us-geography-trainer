@@ -368,9 +368,11 @@
     // running commentary would only compete with the clue for attention.
     el.feedback.hidden = trivia;
     if (trivia && item) {
-      // Each spent try buys the next, easier clue.
+      // Each spent try buys the next, easier clue. The counter is what tells
+      // the player there are three of them and where they are in the set.
       var clues = TRIVIA_CLUES[item.name];
       var step = Math.min(MAX_TRIES - game.tries, clues.length - 1);
+      el.askLabel.textContent = 'Which state · Clue ' + (step + 1) + ' of ' + clues.length;
       renderClue(el.prompt, clues[step]);
     } else {
       el.prompt.textContent = item ? labelOf(item) : '—';
@@ -476,11 +478,28 @@
     );
   }
 
-  function onMiss(item, message, tone) {
+  function onMiss(item, message, tone, clickedName) {
     game.tries--;
     if (game.tries > 0) {
       say(message, tone);
-      render();
+      // Trivia hides the feedback line, so without this a wrong guess looks
+      // like nothing happened — the clue simply changes, and it is not obvious
+      // that the same state is still the question. The other modes keep their
+      // feedback line, and a card on every guess would only slow them down.
+      if (game.mode === 'trivia') {
+        showBurst(
+          'warn',
+          'Not quite',
+          clickedName || 'Out at sea',
+          game.tries > 1
+            ? 'Same state — ' + game.tries + ' more clues'
+            : 'Same state — last clue',
+          1250,
+          render
+        );
+      } else {
+        render();
+      }
       return;
     }
     game.streak = 0;
@@ -584,7 +603,7 @@
     }
     var lead = clicked ? 'Not ' + clicked.name + '. ' : 'That is out at sea. ';
     if (game.tries > 1) lead += 'Here is another clue.';
-    onMiss(item, lead, 'bad');
+    onMiss(item, lead, 'bad', clicked ? clicked.name : null);
   }
 
   // A double-click is one intent, not two guesses. Without this guard the
