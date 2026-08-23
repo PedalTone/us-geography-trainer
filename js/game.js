@@ -682,13 +682,9 @@
     el.regionsBtn.classList.toggle('is-on', on);
     el.regionsBtn.setAttribute('aria-checked', on ? 'true' : 'false');
     regionsUI.setVisible(on);
-    try {
-      localStorage.setItem('usgeo.regionColors', on ? '1' : '0');
-    } catch (e) {
-      /* not fatal */
-    }
-    // The legend takes width from the map, so the canvas has to re-measure.
-    map.resize();
+    // The legend floats over the map rather than taking space from it, so the
+    // canvas keeps its size and only needs a repaint.
+    map.requestDraw();
   }
 
   regionsUI.build(map.states);
@@ -697,13 +693,9 @@
     setRegionColors(!map.regionColors);
   });
 
-  var savedRegionColors = null;
-  try {
-    savedRegionColors = localStorage.getItem('usgeo.regionColors');
-  } catch (e) {
-    /* not fatal */
-  }
-  setRegionColors(savedRegionColors === '1');
+  // Deliberately not remembered across reloads, unlike Terrain and Peek: the
+  // region wash is a study overlay, and the plain map is the game.
+  setRegionColors(false);
 
   var savedTerrain = null;
   try {

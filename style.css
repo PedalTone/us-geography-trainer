@@ -221,19 +221,9 @@ body {
 
 /* ---- map ---- */
 
-/* Map and legend sit side by side; the legend is hidden until regions are on,
-   so by default the map still gets the full width it had before. */
-.mapstage {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  gap: 10px;
-}
-
 .mapwrap {
   position: relative;
   flex: 1;
-  min-width: 0;
   min-height: 0;
   background: linear-gradient(180deg, #101b27, #0c141d);
   border: 1px solid var(--line);
@@ -243,26 +233,25 @@ body {
 
 /* ---- region legend ---- */
 
+/* Floats over the empty ocean in the bottom-left rather than taking a column,
+   so switching regions on never resizes or re-centres the map. It is inert to
+   the mouse: clicks fall through to the canvas underneath. */
 .legend {
-  flex: none;
-  width: 170px;
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 5;
+  max-height: calc(100% - 20px);
   overflow-y: auto;
-  background: var(--panel);
+  pointer-events: none;
+  background: rgba(13, 20, 29, .78);
+  backdrop-filter: blur(5px);
   border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 14px;
+  border-radius: 11px;
+  padding: 9px 11px;
 }
 
 .legend[hidden] { display: none; }
-
-.legend h2 {
-  margin: 0 0 12px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--ink-dim);
-}
 
 .legend-list {
   list-style: none;
@@ -270,27 +259,28 @@ body {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
 }
 
 .legend-swatch {
   flex: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 5px;
-  border: 1px solid rgba(255, 255, 255, .22);
+  width: 13px;
+  height: 13px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, .25);
 }
 
 .legend-name {
-  font-size: 14px;
+  font-size: 12.5px;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.15;
+  white-space: nowrap;
 }
 
 #map {
@@ -390,6 +380,14 @@ body {
 @media (max-height: 620px) {
   .hero-mark { display: none; }
   .title-rule { margin: 10px auto; }
+}
+
+/* Below roughly this height the stack no longer clears the map box, and the
+   legend is click-through so it could not be scrolled if it overflowed. Lay it
+   along the bottom instead. */
+@media (max-height: 470px) {
+  .legend { left: 8px; right: 8px; bottom: 8px; }
+  .legend-list { flex-direction: row; flex-wrap: wrap; gap: 5px 12px; }
 }
 
 .titlecard {
@@ -808,10 +806,8 @@ body {
   .meters { gap: 10px; font-size: 13px; }
   .panel { padding: 18px; }
 
-  /* No room for a side rail: the legend drops under the map and runs across. */
-  .mapstage { flex-direction: column; }
-  .legend { width: auto; padding: 10px 12px; }
-  .legend h2 { display: none; }
-  .legend-list { flex-direction: row; flex-wrap: wrap; gap: 6px 14px; }
-  .legend-name { font-size: 13px; }
+  /* Too narrow for a tall stack in the corner: run it along the bottom. */
+  .legend { left: 8px; right: 8px; bottom: 8px; padding: 8px 10px; }
+  .legend-list { flex-direction: row; flex-wrap: wrap; gap: 5px 12px; }
+  .legend-name { font-size: 12px; }
 }
