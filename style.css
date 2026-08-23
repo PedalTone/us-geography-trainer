@@ -135,6 +135,23 @@ body {
   letter-spacing: -.01em;
 }
 
+/* A clue is a sentence, not a name: it has to wrap and sit at reading size. */
+.ask-target.clue {
+  font-size: clamp(15px, 2vw, 19px);
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: 0;
+  max-width: 62ch;
+  color: var(--ink);
+}
+
+.ask-target.clue b {
+  font-weight: 750;
+  color: var(--warm);
+}
+
+.ask-target.clue i { font-style: italic; }
+
 .stats {
   display: flex;
   align-items: center;
@@ -458,10 +475,15 @@ body {
 
 .mode-cards {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   margin-bottom: 16px;
   text-align: left;
+}
+
+/* Three across gets too narrow to read on a phone. */
+@media (max-width: 620px) {
+  .mode-cards { grid-template-columns: 1fr; }
 }
 
 .mode-card {

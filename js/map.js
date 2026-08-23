@@ -779,7 +779,10 @@
     var GOOD = this.css('--good');
     var BAD = this.css('--bad');
 
-    var showAllBorders = this.mode === 'cities';
+    // Trivia asks which state matches a clue, so the map is a labelled
+    // reference: every border drawn, every state named.
+    var stateMode = this.mode === 'states' || this.mode === 'trivia';
+    var showAllBorders = this.mode === 'cities' || this.mode === 'trivia';
     var i;
 
     // The landmass as one shape — no interior lines leak through.
@@ -806,8 +809,8 @@
       var s = this.states[i];
       var path = this.path(s);
       s._path = path;
-      var solved = this.mode === 'states' && this.solved[s.name];
-      var missed = this.mode === 'states' && this.missed[s.name];
+      var solved = stateMode && this.solved[s.name];
+      var missed = stateMode && this.missed[s.name];
       var hard = this.hardMode && !this.revealAll;
       var a = 1;
       if (hard && (solved || missed)) {
@@ -878,7 +881,9 @@
     var grid = new SpatialGrid(this.w, this.h, 64);
 
     // Abbreviations for states already placed — hard mode never shows them.
-    if (this.mode === 'states' && (!this.hardMode || this.revealAll)) {
+    // Trivia is the exception: it names every state from the start, because
+    // there the puzzle is the clue rather than the shape.
+    if (stateMode && (this.mode === 'trivia' || !this.hardMode || this.revealAll)) {
       ctx.save();
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -886,7 +891,8 @@
       ctx.font = '600 ' + absize + 'px system-ui, sans-serif';
       for (i = 0; i < this.states.length; i++) {
         var ls = this.states[i];
-        if (!this.solved[ls.name] && !this.missed[ls.name]) continue;
+        var named = this.mode === 'trivia' || this.solved[ls.name] || this.missed[ls.name];
+        if (!named) continue;
         var lx = this.sx(ls.anchor[0]);
         var ly = this.sy(ls.anchor[1]);
         ctx.fillStyle = this.missed[ls.name] ? BAD : INK;

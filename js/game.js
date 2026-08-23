@@ -81,6 +81,7 @@
   var el = {
     canvas: document.getElementById('map'),
     prompt: document.getElementById('prompt'),
+    askLabel: document.getElementById('askLabel'),
     tries: document.getElementById('tries'),
     progress: document.getElementById('progress'),
     progressTotal: document.getElementById('progressTotal'),
@@ -134,7 +135,25 @@
   }
 
   function labelOf(item) {
-    return game.mode === 'states' ? item.name : item.label;
+    // States and trivia both ask about a state; only cities carry their own label.
+    return game.mode === 'cities' ? item.label : item.name;
+  }
+
+  // Clue text carries **bold** and *italic* markers. Build real elements rather
+  // than assigning innerHTML, so the data can never inject markup.
+  function renderClue(host, text) {
+    host.textContent = '';
+    var re = /\*\*([^*]+)\*\*|\*([^*]+)\*/g;
+    var last = 0;
+    var m;
+    while ((m = re.exec(text))) {
+      if (m.index > last) host.appendChild(document.createTextNode(text.slice(last, m.index)));
+      var mark = document.createElement(m[1] ? 'b' : 'i');
+      mark.textContent = m[1] || m[2];
+      host.appendChild(mark);
+      last = re.lastIndex;
+    }
+    if (last < text.length) host.appendChild(document.createTextNode(text.slice(last)));
   }
 
   function fmtTime(ms) {
@@ -199,6 +218,19 @@
   /* ---- rounds ------------------------------------------------------- */
 
   function buildQueue(only) {
+    if (game.mode === 'trivia') {
+      // Only states the map can actually be clicked on, and that have clues —
+      // Alaska and Hawaii have clues but are not drawn.
+      var asked = map.states.filter(function (s) {
+        return !!TRIVIA_CLUES[s.name];
+      });
+      if (only) {
+        asked = asked.filter(function (s) {
+          return only.indexOf(s.name) !== -1;
+        });
+      }
+      return shuffle(asked);
+    }
     if (game.mode === 'states') {
       var states = map.states;
       if (only) {
@@ -236,12 +268,14 @@
     map.reveals = [];
     map.markers = [];
     map.revealAll = false;
-    if (game.mode === 'states') map.activeCities = [];
+    if (game.mode !== 'cities') map.activeCities = [];
 
     hideOverlay();
     el.progressTotal.textContent = '/ ' + game.queue.length;
     say(
-      game.mode === 'states'
+      game.mode === 'trivia'
+        ? 'Read the clue and click the state. A wrong guess buys an easier clue.'
+        : game.mode === 'states'
         ? 'Click the state on the map. Three tries each. Zoom in for more details.'
         : 'Click where the city is. Three tries each. Zoom in for more details.'
     );
@@ -255,7 +289,17 @@
 
   function render() {
     var item = current();
-    el.prompt.textContent = item ? labelOf(item) : '—';
+    var trivia = game.mode === 'trivia';
+    el.prompt.classList.toggle('clue', trivia);
+    el.askLabel.textContent = trivia ? 'Which state' : 'Where is';
+    if (trivia && item) {
+      // Each spent try buys the next, easier clue.
+      var clues = TRIVIA_CLUES[item.name];
+      var step = Math.min(MAX_TRIES - game.tries, clues.length - 1);
+      renderClue(el.prompt, clues[step]);
+    } else {
+      el.prompt.textContent = item ? labelOf(item) : '—';
+    }
     el.progress.textContent = game.index;
     el.score.textContent = game.score;
     el.firstTry.textContent = game.firstTry;
@@ -324,20 +368,20 @@
 
     map.solved[labelOf(item)] = performance.now();
     map.addMarker(x, y, 'hit');
-    map.addReveal(game.mode === 'states' ? item.name : item.state, 'hit');
+    map.addReveal(game.mode === 'cities' ? item.state : item.name, 'hit');
 
     var praise =
       game.tries === MAX_TRIES ? 'Correct!' : game.tries === 2 ? 'Got it.' : 'Got it — last try.';
     var extra =
-      game.mode === 'states'
-        ? ' ' + item.name + ' locked in.'
-        : ' ' + item.name + ', ' + item.state + '.';
+      game.mode === 'cities'
+        ? ' ' + item.name + ', ' + item.state + '.'
+        : ' ' + item.name + ' locked in.';
     var tail = ' +' + earned;
     if (reward) tail += ' and +' + reward.bonus + ' streak bonus';
     else if (clean && game.streak >= 2) tail += ' · ' + game.streak + ' in a row';
 
     var message = praise + extra + tail;
-    if (game.mode === 'states' && STATE_FACTS[item.name]) {
+    if (game.mode !== 'cities' && STATE_FACTS[item.name]) {
       var fact = STATE_FACTS[item.name];
       if (fact.border) {
         message += '\n' + item.name + ' borders ' + fact.neighbor + ' along ' + fact.river + '.';
@@ -359,10 +403,10 @@
     game.streak = 0;
     map.missed[labelOf(item)] = performance.now();
     game.missed.push(labelOf(item));
-    map.addReveal(game.mode === 'states' ? item.name : item.state, 'miss');
+    map.addReveal(game.mode === 'cities' ? item.state : item.name, 'miss');
     say(
       'Out of tries — that is ' +
-        (game.mode === 'states' ? item.name : item.name + ', ' + item.state) +
+        (game.mode === 'cities' ? item.name + ', ' + item.state : item.name) +
         ', shown in red.',
       'bad'
     );
@@ -445,11 +489,25 @@
     onMiss(item, lead, tone);
   }
 
+  // Trivia never gives distance or direction hints: the states are all named
+  // on screen, so the only thing being tested is the clue.
+  function answerTrivia(x, y, item) {
+    var clicked = map.stateAt(x, y, 7);
+    if (clicked && clicked.name === item.name) {
+      onCorrect(item, x, y);
+      return;
+    }
+    var lead = clicked ? 'Not ' + clicked.name + '. ' : 'That is out at sea. ';
+    if (game.tries > 1) lead += 'Here is another clue.';
+    onMiss(item, lead, 'bad');
+  }
+
   map.onTap = function (x, y) {
     if (!game.running) return;
     var item = current();
     if (!item) return;
-    if (game.mode === 'states') answerState(x, y, item);
+    if (game.mode === 'trivia') answerTrivia(x, y, item);
+    else if (game.mode === 'states') answerState(x, y, item);
     else answerCity(x, y, item);
   };
 
@@ -475,6 +533,7 @@
   function showTitle() {
     game.running = false;
     var isCities = game.mode === 'cities';
+    var isTrivia = game.mode === 'trivia';
     var best = readBest();
 
     var sizeChips = CITY_SIZES.map(function (n) {
@@ -492,10 +551,12 @@
         '<p class="tagline">No state lines to trace — just terrain, rivers and coast, the way the ' +
         'country actually looks. Find each place by its geography and the borders fill in behind you.</p>' +
         '<div class="mode-cards" id="modeCards">' +
-        '<button class="mode-card' + (isCities ? '' : ' is-on') + '" data-mode="states">' +
+        '<button class="mode-card' + (game.mode === 'states' ? ' is-on' : '') + '" data-mode="states">' +
         '<b>The lower 48</b><span>Every state on a blank map, three tries each</span></button>' +
         '<button class="mode-card' + (isCities ? ' is-on' : '') + '" data-mode="cities">' +
         '<b>Major cities</b><span>Place the biggest cities, borders shown</span></button>' +
+        '<button class="mode-card' + (isTrivia ? ' is-on' : '') + '" data-mode="trivia">' +
+        '<b>Trivia</b><span>Name the state from a clue, on a labelled map</span></button>' +
         '</div>' +
         '<div class="setup">' +
         (isCities
@@ -570,7 +631,11 @@
     showOverlay(
       '<h2>' + (game.missed.length ? 'Round complete' : 'Perfect round') + '</h2>' +
         '<p>' +
-        (game.mode === 'states' ? 'All 48 states' : 'Top ' + game.citySize + ' cities') +
+        (game.mode === 'states'
+          ? 'All 48 states'
+          : game.mode === 'trivia'
+          ? 'Trivia · 48 clues'
+          : 'Top ' + game.citySize + ' cities') +
         ' &middot; ' +
         pct +
         '% of a perfect score' +
