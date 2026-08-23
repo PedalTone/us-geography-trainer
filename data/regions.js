@@ -4,6 +4,11 @@
 // eye crosses the map. Colours are fitted to one constraint: no two regions
 // that SHARE A BORDER may look alike. Measured as CIE dE over the composited
 // translucent fill, the closest adjacent pair is Midwest/Mid-Atlantic at 25.6.
+//
+// South Central is Kentucky alone and Appalachia is West Virginia alone. Both
+// border Mid-Atlantic (through Virginia), which is why South Central is green
+// rather than the magenta it carried when it meant Texas: magenta against the
+// orchid Mid-Atlantic measured 19.8 and would have been the weakest pair.
 var REGIONS = {
   'Pacific Northwest': { color: '#17A2B8' },
   'West Coast':        { color: '#8FC93A' },
@@ -12,6 +17,8 @@ var REGIONS = {
   'Great Plains':      { color: '#EFD055' },
   'Midwest':           { color: '#3F97D8' },
   'South':             { color: '#CC4048' },
+  'South Central':     { color: '#7ECB8F' },
+  'Appalachia':        { color: '#B58A45' },
   'Mid-Atlantic':      { color: '#D9A0E8' },
   'New England':       { color: '#2F46B0' },
 };
@@ -33,7 +40,7 @@ var STATE_REGION = {
   'Indiana': 'Midwest',
   'Iowa': 'Midwest',
   'Kansas': 'Great Plains',
-  'Kentucky': 'South',
+  'Kentucky': 'South Central',
   'Louisiana': 'South',
   'Maine': 'New England',
   'Maryland': 'Mid-Atlantic',
@@ -64,7 +71,7 @@ var STATE_REGION = {
   'Vermont': 'New England',
   'Virginia': 'Mid-Atlantic',
   'Washington': 'Pacific Northwest',
-  'West Virginia': 'South',
+  'West Virginia': 'Appalachia',
   'Wisconsin': 'Midwest',
   'Wyoming': 'Mountain West',
 };

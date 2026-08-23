@@ -385,7 +385,7 @@ body {
 /* Below roughly this height the stack no longer clears the map box, and the
    legend is click-through so it could not be scrolled if it overflowed. Lay it
    along the bottom instead. */
-@media (max-height: 420px) {
+@media (max-height: 470px) {
   .legend { left: 8px; right: 8px; bottom: 8px; }
   .legend-list { flex-direction: row; flex-wrap: wrap; gap: 5px 12px; }
 }
