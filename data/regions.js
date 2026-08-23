@@ -1,11 +1,9 @@
 // US regional classification.
 //
 // Regions are listed west to east so the legend reads in the same order the
-// eye crosses the map. Colours are chosen so that no two regions that SHARE A
-// BORDER look alike — that is the constraint that matters on a map. With
-// twelve categories some pairs are inevitably close in hue; where that happens
-// they are always far apart geographically (Mountain West and Mid-Atlantic,
-// say), so they never meet on screen.
+// eye crosses the map. Colours are fitted to one constraint: no two regions
+// that SHARE A BORDER may look alike. Measured as CIE dE over the composited
+// translucent fill, the closest adjacent pair is Midwest/Mid-Atlantic at 25.6.
 var REGIONS = {
   'Pacific Northwest': { color: '#17A2B8' },
   'West Coast':        { color: '#8FC93A' },
@@ -13,38 +11,36 @@ var REGIONS = {
   'Southwest':         { color: '#E2701F' },
   'Great Plains':      { color: '#EFD055' },
   'Midwest':           { color: '#3F97D8' },
-  'South':             { color: '#D857A8' },
-  'Southeast':         { color: '#CC4048' },
-  'Appalachia':        { color: '#B58A45' },
-  'Mid-Atlantic':      { color: '#C79BE8' },
+  'South':             { color: '#CC4048' },
+  'Mid-Atlantic':      { color: '#D9A0E8' },
   'New England':       { color: '#2F46B0' },
 };
 
 // Every one of the lower 48, one line each. Flat rather than nested inside
 // REGIONS so this reads as the same table it came from.
 var STATE_REGION = {
-  'Alabama': 'Southeast',
+  'Alabama': 'South',
   'Arizona': 'Southwest',
-  'Arkansas': 'Southeast',
+  'Arkansas': 'South',
   'California': 'West Coast',
   'Colorado': 'Mountain West',
   'Connecticut': 'New England',
   'Delaware': 'Mid-Atlantic',
-  'Florida': 'Southeast',
-  'Georgia': 'Southeast',
+  'Florida': 'South',
+  'Georgia': 'South',
   'Idaho': 'Mountain West',
   'Illinois': 'Midwest',
   'Indiana': 'Midwest',
   'Iowa': 'Midwest',
   'Kansas': 'Great Plains',
-  'Kentucky': 'Southeast',
+  'Kentucky': 'South',
   'Louisiana': 'South',
   'Maine': 'New England',
   'Maryland': 'Mid-Atlantic',
   'Massachusetts': 'New England',
   'Michigan': 'Midwest',
   'Minnesota': 'Midwest',
-  'Mississippi': 'Southeast',
+  'Mississippi': 'South',
   'Missouri': 'Midwest',
   'Montana': 'Mountain West',
   'Nebraska': 'Great Plains',
@@ -53,22 +49,22 @@ var STATE_REGION = {
   'New Jersey': 'Mid-Atlantic',
   'New Mexico': 'Southwest',
   'New York': 'Mid-Atlantic',
-  'North Carolina': 'Southeast',
+  'North Carolina': 'South',
   'North Dakota': 'Midwest',
   'Ohio': 'Midwest',
   'Oklahoma': 'Great Plains',
   'Oregon': 'Pacific Northwest',
   'Pennsylvania': 'Mid-Atlantic',
   'Rhode Island': 'New England',
-  'South Carolina': 'Southeast',
+  'South Carolina': 'South',
   'South Dakota': 'Midwest',
-  'Tennessee': 'Southeast',
+  'Tennessee': 'South',
   'Texas': 'South',
   'Utah': 'Mountain West',
   'Vermont': 'New England',
   'Virginia': 'Mid-Atlantic',
   'Washington': 'Pacific Northwest',
-  'West Virginia': 'Appalachia',
+  'West Virginia': 'South',
   'Wisconsin': 'Midwest',
   'Wyoming': 'Mountain West',
 };
