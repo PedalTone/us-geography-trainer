@@ -8,7 +8,7 @@
 <title>Learn the U.S., for real!</title>
 <meta name="description" content="Learn the lower 48 states and the biggest U.S. cities by clicking them on a map with no state lines — just terrain, rivers and coast.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d1219'/%3E%3Cpath d='M4 21l6-8 4.5 5.5L19 11l9 10z' fill='none' stroke='%23e2b558' stroke-width='2' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="style.css?v=37">
+<link rel="stylesheet" href="style.css?v=38">
 </head>
 <body>
 <div class="app">
@@ -66,20 +66,57 @@
       <button class="btn ghost" id="menuBtn">Menu</button>
       <button class="btn ghost" id="restartBtn">Restart</button>
     </div>
-    <div class="version" id="version">v37</div>
+    <div class="version" id="version">v38</div>
   </footer>
 </div>
 
-<script src="data/states.js?v=37"></script>
-<script src="data/cities.js?v=37"></script>
-<script src="data/water.js?v=37"></script>
-<script src="data/features.js?v=37"></script>
-<script src="data/relief.js?v=37"></script>
-<script src="data/regions.js?v=37"></script>
-<script src="js/geo.js?v=37"></script>
-<script src="js/map.js?v=37"></script>
-<script src="js/regions.js?v=37"></script>
-<script src="js/game.js?v=37"></script>
+<script src="data/states.js?v=38"></script>
+<script src="data/cities.js?v=38"></script>
+<script src="data/water.js?v=38"></script>
+<script src="data/features.js?v=38"></script>
+<script src="data/relief.js?v=38"></script>
+<script src="data/regions.js?v=38"></script>
+<script src="js/geo.js?v=38"></script>
+<script src="js/map.js?v=38"></script>
+<script src="js/regions.js?v=38"></script>
+<script src="js/game.js?v=38"></script>
+
+<script>
+/* Every asset carries ?v=N, but index.html itself cannot — and GitHub Pages
+   serves it with a ten minute cache. So a returning player can hold a stale
+   page that then asks for stale assets, and sees an old build with no clue
+   that it is old. Ask the server which build is current; if this page is
+   behind, reload once past the cache. Best-effort and silent: any failure
+   leaves the page exactly as it is. */
+(function () {
+  if (typeof fetch !== 'function') return;
+  var stamp = document.getElementById('version');
+  if (!stamp) return;
+  var build = stamp.textContent.trim().replace(/^v/, '');
+  if (!build) return;
+
+  var tried = null;
+  try {
+    tried = sessionStorage.getItem('usgeo.staleReload');
+  } catch (e) {
+    return; // no sessionStorage means no loop guard, so do not risk reloading
+  }
+
+  fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })
+    .then(function (r) { return r.ok ? r.text() : null; })
+    .then(function (text) {
+      if (text === null) return;
+      var latest = text.trim();
+      if (!latest || latest === build) return;
+      // Only one attempt per build, so a reload that does not help cannot loop.
+      if (tried === latest) return;
+      sessionStorage.setItem('usgeo.staleReload', latest);
+      // A plain reload can be answered from cache again; a new query cannot.
+      location.replace(location.pathname + '?b=' + encodeURIComponent(latest));
+    })
+    .catch(function () {});
+})();
+</script>
 </body>
 </html>
-<!-- v37 deployment -->
+<!-- v38 deployment -->
