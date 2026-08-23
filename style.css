@@ -232,6 +232,8 @@ body {
   transition: color .15s;
 }
 
+.feedback[hidden] { display: none; }
+
 .feedback.good { color: var(--good); }
 .feedback.warm { color: var(--warm); }
 .feedback.bad  { color: var(--bad); }
@@ -624,6 +626,13 @@ body {
 }
 
 /* Hard-mode switch */
+/* Greyed out when the mode makes it meaningless — Peek in Trivia. */
+.switch:disabled {
+  opacity: .38;
+  cursor: default;
+  pointer-events: none;
+}
+
 .switch {
   display: inline-flex;
   align-items: center;

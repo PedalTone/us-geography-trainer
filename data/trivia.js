@@ -29,19 +29,19 @@ var TRIVIA_CLUES = {
     '**Cheese dip** is taken seriously enough to have its own local origin story and trail',
   ],
   'California': [
-    '**Tri-tip** barbecue has especially strong roots around Santa Maria',
+    '**Tri-tip** barbecue has especially strong roots along the central coast',
     'Ordering something **“animal style”** has a meaning almost everyone recognizes',
     'Highways become **“the 5,” “the 405,” “the 101”** in the southern part of the state',
   ],
   'Colorado': [
     'A **fourteener** is a mountain over 14,000 feet — and “doing a 14er” is normal conversation',
     'Food is often ordered **“smothered”** in green chile',
-    '**Pueblo chile** is the homegrown rival to Hatch chile',
+    'A **homegrown steel-town chile** is the fierce rival to the famous New Mexico one',
   ],
   'Connecticut': [
     'A **steamed cheeseburger** is a central-state specialty',
     'A long sandwich is commonly a **grinder**',
-    'New Haven pizza is **“apizza,” pronounced roughly ah-BEETZ**',
+    'In one old shoreline city, pizza is **“apizza,” pronounced roughly ah-BEETZ**',
   ],
   'Delaware': [
     '**Scrapple** is perfectly normal breakfast food',
@@ -56,7 +56,7 @@ var TRIVIA_CLUES = {
   'Georgia': [
     '**Boiled peanuts** are a roadside snack, not a mistake',
     'Peach symbolism is everywhere despite another state producing far more peaches',
-    '**“Lemon pepper wet”** is a recognizable Atlanta wing order',
+    '**“Lemon pepper wet”** is a recognizable wing order in the state’s biggest city',
   ],
   'Hawaii': [
     '**Spam musubi** is everyday convenience food',
@@ -69,7 +69,7 @@ var TRIVIA_CLUES = {
     '**Finger steaks** are battered and fried strips of beef',
   ],
   'Illinois': [
-    '**Giardiniera** is a standard topping for certain sandwiches in Chicago',
+    '**Giardiniera** is a standard topping for certain sandwiches in the big lakefront city',
     'Deep-dish isn’t the only local pizza; many residents eat thin **tavern-style** squares',
     'Italian beef is ordered **dry, wet, or dipped**',
   ],
@@ -129,12 +129,12 @@ var TRIVIA_CLUES = {
     '**Comeback sauce** is a tangy pink dipping sauce/dressing',
   ],
   'Missouri': [
-    '**Provel** is the distinctive processed cheese blend associated with St. Louis pizza',
+    '**Provel** is the distinctive processed cheese blend on the big river city’s pizza',
     'Barbecue can mean burnt ends in one city and a very different tradition elsewhere',
     '**Toasted ravioli** is actually breaded and deep-fried',
   ],
   'Montana': [
-    'A **pastie/pasty** still evokes Butte’s mining heritage',
+    'A **pastie/pasty** still evokes an old copper-mining city’s heritage',
     '**Flathead cherries** are a seasonal obsession in the northwest',
     '**Huckleberry everything** — jam, pie, candy, ice cream, drinks',
   ],
@@ -165,7 +165,7 @@ var TRIVIA_CLUES = {
   ],
   'New York': [
     'A corner convenience store may be a **bodega**',
-    'A chopped-cheese sandwich is strongly associated with NYC neighborhood delis',
+    'A chopped-cheese sandwich is strongly associated with big-city neighborhood delis',
     'In the city, you may stand **“on line”** rather than *in line*',
   ],
   'North Carolina': [
@@ -180,7 +180,7 @@ var TRIVIA_CLUES = {
   ],
   'Ohio': [
     '**Buckeyes** are peanut-butter-and-chocolate candies as well as something else entirely',
-    '**Goetta** is a Cincinnati-area breakfast meat made with oats',
+    '**Goetta** is a southwestern river-city breakfast meat made with oats',
     'A **three-way** is chili over spaghetti topped with shredded cheese',
   ],
   'Oklahoma': [
@@ -196,7 +196,7 @@ var TRIVIA_CLUES = {
   'Pennsylvania': [
     '**Lebanon bologna** is sweet, smoky and unlike ordinary bologna',
     '**Scrapple** is common in the southeastern part of the state',
-    'Around Philadelphia, it’s a **hoagie**, not merely a sub',
+    'Around the state’s biggest city, it’s a **hoagie**, not merely a sub',
   ],
   'Rhode Island': [
     '**Stuffies** are baked stuffed quahogs',
@@ -215,8 +215,8 @@ var TRIVIA_CLUES = {
   ],
   'Tennessee': [
     'A **meat-and-three** means choose one meat and three side dishes',
-    'Memphis barbecue and Nashville barbecue culture don’t mean exactly the same thing',
-    '**Hot chicken** means the cayenne-heavy Nashville preparation',
+    'The state’s two great music cities don’t mean quite the same thing by barbecue',
+    '**Hot chicken** means the capital city’s cayenne-heavy preparation',
   ],
   'Texas': [
     '**Breakfast tacos** inspire serious opinions about tortillas and fillings',
@@ -239,7 +239,7 @@ var TRIVIA_CLUES = {
     'A **Virginia peanut** means the large crunchy variety commonly sold as a ballpark peanut',
   ],
   'Washington': [
-    '**Teriyaki** is unusually embedded in Seattle-area everyday takeout culture',
+    '**Teriyaki** is unusually embedded in the big port city’s everyday takeout culture',
     'Coffee drive-through stands are nearly part of the landscape',
     '**Geoduck** is pronounced **“gooey-duck”**',
   ],
@@ -255,7 +255,7 @@ var TRIVIA_CLUES = {
   ],
   'Wyoming': [
     '**Bison burgers** and game meat appear routinely on menus',
-    '**Cheyenne Frontier Days** is treated as much more than just another rodeo',
+    '**Frontier Days** is treated as much more than just another rodeo',
     'The **jackalope** — a horned mythical rabbit — has an especially strong local folklore tradition',
   ],
 };

@@ -363,6 +363,9 @@
     var trivia = game.mode === 'trivia';
     el.prompt.classList.toggle('clue', trivia);
     el.askLabel.textContent = trivia ? 'Which state' : 'Where is';
+    // Nothing sits under the clue: the answer card carries the result, and a
+    // running commentary would only compete with the clue for attention.
+    el.feedback.hidden = trivia;
     if (trivia && item) {
       // Each spent try buys the next, easier clue.
       var clues = TRIVIA_CLUES[item.name];
@@ -628,7 +631,7 @@
     showOverlay(
       '<canvas class="hero-mark" id="heroMark"></canvas>' +
         '<p class="eyebrow">Geography trainer</p>' +
-        '<h2 class="title">Learn the U.S., <em>for real!</em></h2>' +
+        '<h2 class="title">State the <em>Facts!</em></h2>' +
         '<hr class="title-rule">' +
         '<p class="tagline">No state lines to trace — just terrain, rivers and coast, the way the ' +
         'country actually looks. Find each place by its geography and the borders fill in behind you.</p>' +
@@ -759,6 +762,11 @@
     Array.prototype.forEach.call(el.modes.children, function (c) {
       c.classList.toggle('is-on', c.dataset.mode === mode);
     });
+    // Trivia already draws every border, so Peek has nothing left to reveal.
+    el.peekBtn.disabled = mode === 'trivia';
+    el.peekBtn.title = mode === 'trivia'
+      ? 'Trivia already shows every border'
+      : 'Show all state boundaries';
     map.mode = mode;
     map.solved = {};
     map.missed = {};
