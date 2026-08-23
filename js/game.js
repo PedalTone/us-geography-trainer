@@ -322,6 +322,7 @@
 
   function startRound(only) {
     clearBurst();
+    lastTapAt = -Infinity;
     game.queue = buildQueue(only);
     game.index = 0;
     game.tries = MAX_TRIES;
@@ -586,8 +587,17 @@
     onMiss(item, lead, 'bad');
   }
 
+  // A double-click is one intent, not two guesses. Without this guard the
+  // second click of a natural double-click spends another try — which in Trivia
+  // silently skips a clue, and in the other modes throws away a life.
+  var TAP_DEBOUNCE_MS = 450;
+  var lastTapAt = -Infinity;
+
   map.onTap = function (x, y) {
     if (!game.running || game.blocked) return;
+    var now = performance.now();
+    if (now - lastTapAt < TAP_DEBOUNCE_MS) return;
+    lastTapAt = now;
     var item = current();
     if (!item) return;
     if (game.mode === 'trivia') answerTrivia(x, y, item);
