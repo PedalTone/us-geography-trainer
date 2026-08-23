@@ -4,7 +4,7 @@
 
 var REGIONS = {
   'Northeast': {
-    color: '#2E5090',
+    color: '#9B72E0',
     states: [
       'Maine', 'New Hampshire', 'Vermont', // New England
       'Massachusetts', 'Rhode Island', 'Connecticut', // New England
@@ -14,7 +14,7 @@ var REGIONS = {
   },
 
   'Midwest': {
-    color: '#4A7BA7',
+    color: '#3D8FD1',
     states: [
       'Ohio', // Ambiguous: Far east, but culturally Midwest
       'Indiana', 'Illinois', 'Michigan', 'Wisconsin', // Great Lakes
@@ -25,7 +25,7 @@ var REGIONS = {
   },
 
   'South': {
-    color: '#C85A54',
+    color: '#D94F5C',
     states: [
       'Maryland', 'Delaware', 'Virginia', 'West Virginia', // Border South
       'Kentucky', 'Tennessee', 'Arkansas', // Upper South
@@ -37,7 +37,7 @@ var REGIONS = {
   },
 
   'Southwest': {
-    color: '#D4A574',
+    color: '#E8963C',
     states: [
       'Arizona', 'New Mexico', // Mountain Southwest
       'Nevada', 'Utah', 'Colorado' // Mountain West (sometimes grouped here)
@@ -46,7 +46,7 @@ var REGIONS = {
   },
 
   'West': {
-    color: '#6B8E23',
+    color: '#4CAF6D',
     states: [
       'Washington', 'Oregon', 'California', // Pacific Coast
       'Idaho', 'Montana', 'Wyoming' // Mountain West

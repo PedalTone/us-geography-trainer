@@ -8,7 +8,7 @@
 <title>Learn the U.S., for real!</title>
 <meta name="description" content="Learn the lower 48 states and the biggest U.S. cities by clicking them on a map with no state lines — just terrain, rivers and coast.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d1219'/%3E%3Cpath d='M4 21l6-8 4.5 5.5L19 11l9 10z' fill='none' stroke='%23e2b558' stroke-width='2' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="style.css?v=33">
+<link rel="stylesheet" href="style.css?v=34">
 </head>
 <body>
 <div class="app">
@@ -19,7 +19,8 @@
               title="Shaded relief, rivers, lakes and their names"><span class="track"><span class="knob"></span></span>Terrain</button>
       <button class="switch switch-cool" id="peekBtn" role="switch" aria-checked="false"
               title="Show all state boundaries"><span class="track"><span class="knob"></span></span>Peek</button>
-      <button class="btn ghost" id="regionsBtn" title="Learn about US regions">Regions</button>
+      <button class="switch switch-cool" id="regionsBtn" role="switch" aria-checked="false"
+              title="Shade every state by its region"><span class="track"><span class="knob"></span></span>Regions</button>
       <nav class="modes" id="modes">
         <button class="mode-btn is-on" data-mode="states">States</button>
         <button class="mode-btn" data-mode="cities">Cities</button>
@@ -41,27 +42,21 @@
 
   <div class="feedback" id="feedback">&nbsp;</div>
 
-  <div class="mapwrap">
-    <canvas id="map"></canvas>
-    <button class="reset-view" id="resetView" title="Back to the whole map">Reset view</button>
-    <div class="toast" id="toast" aria-live="polite"></div>
+  <div class="mapstage">
+    <div class="mapwrap">
+      <canvas id="map"></canvas>
+      <button class="reset-view" id="resetView" title="Back to the whole map">Reset view</button>
+      <div class="toast" id="toast" aria-live="polite"></div>
 
-    <div class="overlay" id="overlay">
-      <div class="panel" id="panel"></div>
-    </div>
-
-    <div class="regions-panel" id="regionsPanel">
-      <div class="panel">
-        <button class="close-btn" id="closeRegionsBtn" aria-label="Close regions">✕</button>
-        <h2>US Regions</h2>
-        <div class="regions-head">
-          <p class="regions-hint">Colours below match the map.</p>
-          <button class="switch switch-cool" id="regionPaintBtn" role="switch" aria-checked="false"
-                  title="Shade every state on the map by its region"><span class="track"><span class="knob"></span></span>Show on map</button>
-        </div>
-        <div class="regions-list" id="regionsList"></div>
+      <div class="overlay" id="overlay">
+        <div class="panel" id="panel"></div>
       </div>
     </div>
+
+    <aside class="legend" id="regionLegend" hidden>
+      <h2>Regions</h2>
+      <ul class="legend-list" id="legendList"></ul>
+    </aside>
   </div>
 
   <footer class="bottombar">
@@ -74,20 +69,20 @@
       <button class="btn ghost" id="menuBtn">Menu</button>
       <button class="btn ghost" id="restartBtn">Restart</button>
     </div>
-    <div class="version" id="version">v33</div>
+    <div class="version" id="version">v34</div>
   </footer>
 </div>
 
-<script src="data/states.js?v=33"></script>
-<script src="data/cities.js?v=33"></script>
-<script src="data/water.js?v=33"></script>
-<script src="data/features.js?v=33"></script>
-<script src="data/relief.js?v=33"></script>
-<script src="data/regions.js?v=33"></script>
-<script src="js/geo.js?v=33"></script>
-<script src="js/map.js?v=33"></script>
-<script src="js/regions.js?v=33"></script>
-<script src="js/game.js?v=33"></script>
+<script src="data/states.js?v=34"></script>
+<script src="data/cities.js?v=34"></script>
+<script src="data/water.js?v=34"></script>
+<script src="data/features.js?v=34"></script>
+<script src="data/relief.js?v=34"></script>
+<script src="data/regions.js?v=34"></script>
+<script src="js/geo.js?v=34"></script>
+<script src="js/map.js?v=34"></script>
+<script src="js/regions.js?v=34"></script>
+<script src="js/game.js?v=34"></script>
 </body>
 </html>
-<!-- v33 deployment -->
+<!-- v34 deployment -->

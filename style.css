@@ -221,14 +221,76 @@ body {
 
 /* ---- map ---- */
 
+/* Map and legend sit side by side; the legend is hidden until regions are on,
+   so by default the map still gets the full width it had before. */
+.mapstage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 10px;
+}
+
 .mapwrap {
   position: relative;
   flex: 1;
+  min-width: 0;
   min-height: 0;
   background: linear-gradient(180deg, #101b27, #0c141d);
   border: 1px solid var(--line);
   border-radius: 14px;
   overflow: hidden;
+}
+
+/* ---- region legend ---- */
+
+.legend {
+  flex: none;
+  width: 170px;
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.legend[hidden] { display: none; }
+
+.legend h2 {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.legend-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.legend-swatch {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, .22);
+}
+
+.legend-name {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 #map {
@@ -740,160 +802,16 @@ body {
   opacity: 0.8;
 }
 
-/* ---- regions panel ---- */
-
-/* The title screen scrim is fixed at z-index 20 and covers the topbar, so the
-   Regions button has to sit above it to stay clickable before a game starts. */
-#regionsBtn {
-  position: relative;
-  z-index: 30;
-}
-
-.regions-panel {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 18px;
-  background: rgba(8, 13, 19, .82);
-  backdrop-filter: blur(3px);
-  z-index: 999;
-}
-
-.regions-panel.show {
-  display: flex;
-}
-
-.regions-panel > .panel {
-  width: min(600px, 90vw);
-  max-height: 85vh;
-  overflow-y: auto;
-  padding: 24px;
-  position: relative;
-}
-
-.regions-panel h2 {
-  margin: 0 0 20px 0;
-  font-size: 24px;
-  color: var(--ink);
-}
-
-.regions-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin: 0 0 18px;
-}
-
-.regions-hint {
-  margin: 0;
-  font-size: 13.5px;
-  color: var(--ink-dim);
-}
-
-.regions-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.region-item {
-  display: grid;
-  grid-template-columns: 8px 1fr;
-  gap: 16px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--panel-2);
-  transition: border-color 0.2s;
-}
-
-.region-item:hover {
-  border-color: rgba(255, 255, 255, .18);
-}
-
-.region-color-bar {
-  width: 8px;
-}
-
-.region-content {
-  padding: 16px;
-  padding-left: 0;
-}
-
-.region-content h3 {
-  margin: 0 0 8px 0;
-  font-size: 18px;
-  color: var(--accent);
-  font-weight: 600;
-}
-
-.region-description {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  color: var(--ink-dim);
-  line-height: 1.5;
-}
-
-.states-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0;
-}
-
-.state-tag {
-  display: inline-block;
-  background: rgba(255, 255, 255, .08);
-  color: var(--ink);
-  padding: 4px 10px;
-  border-radius: 16px;
-  font-size: 13px;
-  font-weight: 500;
-  border: 1px solid rgba(255, 255, 255, .12);
-  transition: all 0.2s;
-}
-
-.state-tag:hover {
-  background: rgba(255, 255, 255, .12);
-  border-color: rgba(255, 255, 255, .20);
-}
-
-.state-tag.ambiguous {
-  border-color: var(--warm);
-  color: var(--warm);
-  background: rgba(251, 191, 36, .08);
-}
-
-.state-tag.ambiguous:hover {
-  background: rgba(251, 191, 36, .16);
-}
-
-.close-btn {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: transparent;
-  border: none;
-  color: var(--ink-dim);
-  font-size: 24px;
-  cursor: pointer;
-  padding: 4px;
-  line-height: 1;
-  transition: color 0.2s;
-  z-index: 10;
-}
-
-.close-btn:hover {
-  color: var(--ink);
-}
-
 @media (max-width: 560px) {
   .app { padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); }
   .topbar h1 { display: none; }
   .meters { gap: 10px; font-size: 13px; }
   .panel { padding: 18px; }
+
+  /* No room for a side rail: the legend drops under the map and runs across. */
+  .mapstage { flex-direction: column; }
+  .legend { width: auto; padding: 10px 12px; }
+  .legend h2 { display: none; }
+  .legend-list { flex-direction: row; flex-wrap: wrap; gap: 6px 14px; }
+  .legend-name { font-size: 13px; }
 }

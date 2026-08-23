@@ -1,114 +1,45 @@
-// Regions UI Handler - US Regional Classifications
+// Builds the region legend beside the map. The swatches are the same colours
+// the canvas paints, read from the one source in data/regions.js so the legend
+// can never drift from the map.
 
-var regionsUI = (function() {
-  // Wait for DOM to be ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+var regionsUI = (function () {
+  function build(mapStates) {
+    var list = document.getElementById('legendList');
+    if (!list) return;
 
-  function closePanel() {
-    var p = document.getElementById('regionsPanel');
-    if (p) p.classList.remove('show');
-  }
-
-  function init() {
-    const regionsBtn = document.getElementById('regionsBtn');
-    const regionsPanel = document.getElementById('regionsPanel');
-    const closeBtn = document.getElementById('closeRegionsBtn');
-    const regionsList = document.getElementById('regionsList');
-    const paintBtn = document.getElementById('regionPaintBtn');
-
-    if (!regionsBtn || !regionsPanel || !regionsList) {
-      console.error('Regions: Missing DOM elements');
-      return;
-    }
-
-    // Build regions list once
-    buildRegionsList(regionsList);
-
-    // The paint-the-map toggle needs the MapView, which lives in game.js's
-    // closure — note `map` here would resolve to the canvas element, since it
-    // carries id="map". game.js wires that button and calls back through
-    // regionsUI.closePanel() so turning it on reveals the map underneath.
-    if (paintBtn) {
-      paintBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-      });
-    }
-
-    // Show regions panel
-    regionsBtn.addEventListener('click', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      regionsPanel.classList.add('show');
+    // Only list regions that actually appear on the map. The game is the lower
+    // 48, so Alaska & Hawaii would otherwise be a legend entry for nothing.
+    var present = {};
+    (mapStates || []).forEach(function (s) {
+      var region = getRegionForState(s.name);
+      if (region) present[region] = true;
     });
 
-    // Close button
-    if (closeBtn) {
-      closeBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        regionsPanel.classList.remove('show');
-      });
-    }
+    list.innerHTML = '';
+    Object.keys(REGIONS).forEach(function (regionName) {
+      if (!present[regionName]) return;
 
-    // Click on background to close
-    regionsPanel.addEventListener('click', function(e) {
-      if (e.target === regionsPanel) {
-        regionsPanel.classList.remove('show');
-      }
+      var li = document.createElement('li');
+      li.className = 'legend-item';
+
+      var swatch = document.createElement('span');
+      swatch.className = 'legend-swatch';
+      swatch.style.backgroundColor = REGIONS[regionName].color;
+
+      var label = document.createElement('span');
+      label.className = 'legend-name';
+      label.textContent = regionName;
+
+      li.appendChild(swatch);
+      li.appendChild(label);
+      list.appendChild(li);
     });
   }
 
-  function buildRegionsList(container) {
-    container.innerHTML = '';
-
-    for (const [regionName, regionData] of Object.entries(REGIONS)) {
-      const regionDiv = document.createElement('div');
-      regionDiv.className = 'region-item';
-
-      const colorBar = document.createElement('div');
-      colorBar.className = 'region-color-bar';
-      colorBar.style.backgroundColor = regionData.color;
-
-      const regionContent = document.createElement('div');
-      regionContent.className = 'region-content';
-
-      const regionTitle = document.createElement('h3');
-      regionTitle.textContent = regionName;
-
-      const regionDesc = document.createElement('p');
-      regionDesc.className = 'region-description';
-      regionDesc.textContent = regionData.description;
-
-      const statesList = document.createElement('div');
-      statesList.className = 'states-list';
-
-      for (const stateName of regionData.states) {
-        const stateTag = document.createElement('span');
-        stateTag.className = 'state-tag';
-        stateTag.textContent = stateName;
-
-        if (REGION_NOTES[stateName]) {
-          stateTag.title = REGION_NOTES[stateName];
-          stateTag.classList.add('ambiguous');
-        }
-
-        statesList.appendChild(stateTag);
-      }
-
-      regionContent.appendChild(regionTitle);
-      regionContent.appendChild(regionDesc);
-      regionContent.appendChild(statesList);
-
-      regionDiv.appendChild(colorBar);
-      regionDiv.appendChild(regionContent);
-
-      container.appendChild(regionDiv);
-    }
+  function setVisible(on) {
+    var legend = document.getElementById('regionLegend');
+    if (legend) legend.hidden = !on;
   }
 
-  return { closePanel: closePanel };
+  return { build: build, setVisible: setVisible };
 })();
