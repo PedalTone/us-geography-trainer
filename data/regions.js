@@ -1,112 +1,92 @@
-// US Regional Classifications
-// Based on US Census Bureau divisions + popular consensus
-// Some states have ambiguous regional identity (noted)
-
+// US regional classification.
+//
+// Regions are listed west to east so the legend reads in the same order the
+// eye crosses the map. Colours are chosen so that no two regions that SHARE A
+// BORDER look alike — that is the constraint that matters on a map. With
+// twelve categories some pairs are inevitably close in hue; where that happens
+// they are always far apart geographically (Mountain West and Mid-Atlantic,
+// say), so they never meet on screen.
 var REGIONS = {
-  'Northeast': {
-    color: '#9B72E0',
-    states: [
-      'Maine', 'New Hampshire', 'Vermont', // New England
-      'Massachusetts', 'Rhode Island', 'Connecticut', // New England
-      'New York', 'Pennsylvania', 'New Jersey' // Mid-Atlantic
-    ],
-    description: 'The Northeast includes New England (the original colonies) and the Mid-Atlantic states. Major cities: Boston, New York, Philadelphia.'
-  },
-
-  'Midwest': {
-    color: '#3D8FD1',
-    states: [
-      'Ohio', // Ambiguous: Far east, but culturally Midwest
-      'Indiana', 'Illinois', 'Michigan', 'Wisconsin', // Great Lakes
-      'Minnesota', 'Iowa', 'Missouri', // Upper Midwest
-      'North Dakota', 'South Dakota', 'Nebraska', 'Kansas' // Great Plains
-    ],
-    description: 'The Midwest is the heartland of America, known for agriculture, manufacturing, and Great Lakes shipping. Major cities: Chicago, Detroit, Minneapolis.'
-  },
-
-  'South': {
-    color: '#D94F5C',
-    states: [
-      'Maryland', 'Delaware', 'Virginia', 'West Virginia', // Border South
-      'Kentucky', 'Tennessee', 'Arkansas', // Upper South
-      'North Carolina', 'South Carolina', 'Georgia', 'Florida', // Carolinas & Deep South
-      'Alabama', 'Mississippi', 'Louisiana', // Deep South
-      'Texas', 'Oklahoma' // South/Southwest
-    ],
-    description: 'The South spans from the Border States through the Deep South and into Texas. Known for distinct culture, history, and cuisine. Major cities: Atlanta, New Orleans, Miami.'
-  },
-
-  'Southwest': {
-    color: '#E8963C',
-    states: [
-      'Arizona', 'New Mexico', // Mountain Southwest
-      'Nevada', 'Utah', 'Colorado' // Mountain West (sometimes grouped here)
-    ],
-    description: 'The Southwest is characterized by desert landscapes, Native American heritage, and Spanish colonial history. Major cities: Phoenix, Albuquerque, Denver.'
-  },
-
-  'West': {
-    color: '#4CAF6D',
-    states: [
-      'Washington', 'Oregon', 'California', // Pacific Coast
-      'Idaho', 'Montana', 'Wyoming' // Mountain West
-    ],
-    description: 'The West includes the Pacific Coast and Rocky Mountain regions. Known for natural beauty, tech industry (California), and outdoor recreation. Major cities: Seattle, San Francisco, Los Angeles.'
-  },
-
-  'Alaska & Hawaii': {
-    color: '#8B7355',
-    states: ['Alaska', 'Hawaii'],
-    description: 'Alaska and Hawaii are geographically and culturally distinct from the continental US, each with unique histories and indigenous populations.'
-  }
+  'Pacific Northwest': { color: '#17A2B8' },
+  'West Coast':        { color: '#8FC93A' },
+  'Mountain West':     { color: '#8A63D8' },
+  'Southwest':         { color: '#E2701F' },
+  'Great Plains':      { color: '#EFD055' },
+  'Midwest':           { color: '#3F97D8' },
+  'South Central':     { color: '#D857A8' },
+  'Gulf South':        { color: '#FF9E7A' },
+  'Southeast':         { color: '#CC4048' },
+  'Appalachia':        { color: '#B58A45' },
+  'Mid-Atlantic':      { color: '#C79BE8' },
+  'New England':       { color: '#2F46B0' },
 };
 
-// Regional aliases - states that could belong to multiple regions
-var REGION_NOTES = {
-  'Ohio': 'Often considered Midwest despite being east of the Mississippi River. Culturally identifies as Midwest.',
-  'Missouri': 'Border state between Midwest and South; often considered part of the Midwest.',
-  'Oklahoma': 'Bridge between South and Southwest; oil and agricultural ties to both.',
-  'West Virginia': 'Border state; sometimes grouped with Appalachia (Border South) or Midwest.',
-  'Kentucky': 'Border state with mixed Southern and Midwestern cultural elements.',
-  'Colorado': 'Mountain state often grouped with West Coast or Southwest.',
-  'Montana': 'Northern Mountain state; sometimes considered part of the West or its own region.',
-  'Idaho': 'Mountain state with ties to both West Coast and Mountain regions.'
+// Every one of the lower 48, one line each. Flat rather than nested inside
+// REGIONS so this reads as the same table it came from.
+var STATE_REGION = {
+  'Alabama': 'Southeast',
+  'Arizona': 'Southwest',
+  'Arkansas': 'Southeast',
+  'California': 'West Coast',
+  'Colorado': 'Mountain West',
+  'Connecticut': 'New England',
+  'Delaware': 'Mid-Atlantic',
+  'Florida': 'Southeast',
+  'Georgia': 'Southeast',
+  'Idaho': 'Mountain West',
+  'Illinois': 'Midwest',
+  'Indiana': 'Midwest',
+  'Iowa': 'Midwest',
+  'Kansas': 'Great Plains',
+  'Kentucky': 'Southeast',
+  'Louisiana': 'Gulf South',
+  'Maine': 'New England',
+  'Maryland': 'Mid-Atlantic',
+  'Massachusetts': 'New England',
+  'Michigan': 'Midwest',
+  'Minnesota': 'Midwest',
+  'Mississippi': 'Southeast',
+  'Missouri': 'Midwest',
+  'Montana': 'Mountain West',
+  'Nebraska': 'Great Plains',
+  'Nevada': 'Mountain West',
+  'New Hampshire': 'New England',
+  'New Jersey': 'Mid-Atlantic',
+  'New Mexico': 'Southwest',
+  'New York': 'Mid-Atlantic',
+  'North Carolina': 'Southeast',
+  'North Dakota': 'Midwest',
+  'Ohio': 'Midwest',
+  'Oklahoma': 'Great Plains',
+  'Oregon': 'Pacific Northwest',
+  'Pennsylvania': 'Mid-Atlantic',
+  'Rhode Island': 'New England',
+  'South Carolina': 'Southeast',
+  'South Dakota': 'Midwest',
+  'Tennessee': 'Southeast',
+  'Texas': 'South Central',
+  'Utah': 'Mountain West',
+  'Vermont': 'New England',
+  'Virginia': 'Mid-Atlantic',
+  'Washington': 'Pacific Northwest',
+  'West Virginia': 'Appalachia',
+  'Wisconsin': 'Midwest',
+  'Wyoming': 'Mountain West',
 };
 
-// Flat state -> region lookup, built once. The renderer asks for a colour for
-// every state on every frame, so this must not be a scan over all six regions.
-var STATE_REGION = {};
-Object.keys(REGIONS).forEach(function (regionName) {
-  REGIONS[regionName].states.forEach(function (stateName) {
-    STATE_REGION[stateName] = regionName;
-  });
-});
-
-// Get the region for a given state
 function getRegionForState(stateName) {
   return STATE_REGION[stateName] || null;
 }
 
-// Get all states in a region
-function getStatesInRegion(regionName) {
-  return REGIONS[regionName] ? REGIONS[regionName].states : [];
-}
-
-// Get color for a state based on its region
-function getStateRegionColor(stateName) {
-  var region = STATE_REGION[stateName];
-  return region ? REGIONS[region].color : '#999999';
-}
-
-// Map fills sit over shaded relief, so the region colours are painted
-// translucent — the terrain underneath is the whole point of the map.
+// Map fills sit over shaded relief, so region colours are painted translucent —
+// the terrain underneath is the whole point of the map.
 var REGION_FILL = {};
 Object.keys(REGIONS).forEach(function (regionName) {
   var hex = REGIONS[regionName].color;
   var r = parseInt(hex.slice(1, 3), 16);
   var g = parseInt(hex.slice(3, 5), 16);
   var b = parseInt(hex.slice(5, 7), 16);
-  REGION_FILL[regionName] = 'rgba(' + r + ',' + g + ',' + b + ',.52)';
+  REGION_FILL[regionName] = 'rgba(' + r + ',' + g + ',' + b + ',.55)';
 });
 
 function getStateRegionFill(stateName) {
