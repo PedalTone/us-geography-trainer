@@ -101,6 +101,7 @@
     streak: document.getElementById('streak'),
     streakCount: document.getElementById('streakCount'),
     toast: document.getElementById('toast'),
+    burst: document.getElementById('burst'),
   };
 
   var map = new window.MapView(el.canvas);
@@ -137,6 +138,75 @@
   function labelOf(item) {
     // States and trivia both ask about a state; only cities carry their own label.
     return game.mode === 'cities' ? item.label : item.name;
+  }
+
+  function displayName(item) {
+    return game.mode === 'cities' ? item.name + ', ' + item.state : item.name;
+  }
+
+  /* ---- answer card -------------------------------------------------- */
+
+  // Rotated so 48 answers in a row do not read as the same sentence twice.
+  var CHEERS = ['Nailed it!', 'Yes!', 'Got it!', 'Spot on!', 'Exactly!', 'That’s the one!'];
+  var CHEERS_CLEAN = ['Straight away!', 'First try!', 'No hesitation!'];
+  var CONSOLE_LINES = [
+    'Now you know.',
+    'You’ll have it next time.',
+    'One to remember.',
+    'File that one away.',
+    'Next time it’s yours.',
+  ];
+
+  function pick(list) {
+    return list[Math.floor(Math.random() * list.length)];
+  }
+
+  var burstTimers = [];
+
+  // Clears the card immediately and drops any pending step, so restarting or
+  // leaving mid-celebration cannot advance the round underneath the new one.
+  function clearBurst() {
+    burstTimers.forEach(clearTimeout);
+    burstTimers = [];
+    el.burst.className = 'burst';
+    el.burst.textContent = '';
+    game.blocked = false;
+  }
+
+  function showBurst(kind, head, name, note, hold, then) {
+    clearBurst();
+
+    var card = document.createElement('div');
+    card.className = 'burst-card';
+    var rows = kind === 'hit'
+      ? [['burst-glyph', '✓'], ['burst-head', head], ['burst-name', name], ['burst-note', note]]
+      : [['burst-head', head], ['burst-name', name], ['burst-note', note]];
+    rows.forEach(function (row) {
+      if (!row[1]) return;
+      var d = document.createElement('div');
+      d.className = row[0];
+      d.textContent = row[1];
+      card.appendChild(d);
+    });
+    el.burst.textContent = '';
+    el.burst.appendChild(card);
+    el.burst.className = 'burst show ' + kind;
+
+    // Taps are ignored while the card is up, so a fast click cannot answer the
+    // next question before it has been shown.
+    game.blocked = true;
+
+    burstTimers.push(
+      setTimeout(function () {
+        el.burst.classList.add('out');
+        burstTimers.push(
+          setTimeout(function () {
+            clearBurst();
+            then();
+          }, 300)
+        );
+      }, hold)
+    );
   }
 
   // Clue text carries **bold** and *italic* markers. Build real elements rather
@@ -251,6 +321,7 @@
   }
 
   function startRound(only) {
+    clearBurst();
     game.queue = buildQueue(only);
     game.index = 0;
     game.tries = MAX_TRIES;
@@ -390,7 +461,15 @@
       }
     }
     say(message, 'good');
-    advance();
+    showBurst(
+      'hit',
+      clean ? pick(CHEERS_CLEAN) : pick(CHEERS),
+      displayName(item),
+      '+' + earned + (earned === 1 ? ' point' : ' points') +
+        (reward ? '  ·  +' + reward.bonus + ' streak' : ''),
+      1150,
+      advance
+    );
   }
 
   function onMiss(item, message, tone) {
@@ -410,7 +489,9 @@
         ', shown in red.',
       'bad'
     );
-    advance();
+    // Held longer than a correct answer: this card is the only chance to study
+    // the one that got away before the round moves on.
+    showBurst('miss', 'It was', displayName(item), pick(CONSOLE_LINES), 1900, advance);
   }
 
   function answerState(x, y, item) {
@@ -503,7 +584,7 @@
   }
 
   map.onTap = function (x, y) {
-    if (!game.running) return;
+    if (!game.running || game.blocked) return;
     var item = current();
     if (!item) return;
     if (game.mode === 'trivia') answerTrivia(x, y, item);
@@ -531,6 +612,7 @@
   }
 
   function showTitle() {
+    clearBurst();
     game.running = false;
     var isCities = game.mode === 'cities';
     var isTrivia = game.mode === 'trivia';

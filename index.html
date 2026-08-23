@@ -8,7 +8,7 @@
 <title>Learn the U.S., for real!</title>
 <meta name="description" content="Learn the lower 48 states and the biggest U.S. cities by clicking them on a map with no state lines — just terrain, rivers and coast.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d1219'/%3E%3Cpath d='M4 21l6-8 4.5 5.5L19 11l9 10z' fill='none' stroke='%23e2b558' stroke-width='2' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="style.css?v=40">
+<link rel="stylesheet" href="style.css?v=41">
 </head>
 <body>
 <div class="app">
@@ -47,6 +47,7 @@
     <canvas id="map"></canvas>
     <button class="reset-view" id="resetView" title="Back to the whole map">Reset view</button>
     <div class="toast" id="toast" aria-live="polite"></div>
+    <div class="burst" id="burst" aria-live="polite"></div>
 
     <aside class="legend" id="regionLegend" hidden>
       <ul class="legend-list" id="legendList"></ul>
@@ -67,21 +68,21 @@
       <button class="btn ghost" id="menuBtn">Menu</button>
       <button class="btn ghost" id="restartBtn">Restart</button>
     </div>
-    <div class="version" id="version">v40</div>
+    <div class="version" id="version">v41</div>
   </footer>
 </div>
 
-<script src="data/states.js?v=40"></script>
-<script src="data/cities.js?v=40"></script>
-<script src="data/water.js?v=40"></script>
-<script src="data/features.js?v=40"></script>
-<script src="data/relief.js?v=40"></script>
-<script src="data/regions.js?v=40"></script>
-<script src="data/trivia.js?v=40"></script>
-<script src="js/geo.js?v=40"></script>
-<script src="js/map.js?v=40"></script>
-<script src="js/regions.js?v=40"></script>
-<script src="js/game.js?v=40"></script>
+<script src="data/states.js?v=41"></script>
+<script src="data/cities.js?v=41"></script>
+<script src="data/water.js?v=41"></script>
+<script src="data/features.js?v=41"></script>
+<script src="data/relief.js?v=41"></script>
+<script src="data/regions.js?v=41"></script>
+<script src="data/trivia.js?v=41"></script>
+<script src="js/geo.js?v=41"></script>
+<script src="js/map.js?v=41"></script>
+<script src="js/regions.js?v=41"></script>
+<script src="js/game.js?v=41"></script>
 
 <script>
 /* Every asset carries ?v=N, but index.html itself cannot — and GitHub Pages
@@ -121,4 +122,4 @@
 </script>
 </body>
 </html>
-<!-- v40 deployment -->
+<!-- v41 deployment -->
