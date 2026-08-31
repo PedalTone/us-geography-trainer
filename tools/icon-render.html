@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>icon render</title>
+<style>html,body{margin:0;padding:0;background:transparent;overflow:hidden}
+canvas{display:block;width:1024px;height:1024px}</style>
+</head>
+<body>
+<!-- Full-bleed 1024 canvas, sized so a 1024x1024 headless screenshot captures
+     exactly the icon. tools/icon.html is the interactive previewer; this is
+     the one the build shoots. -->
+<script src="../data/states.js"></script>
+<script src="../js/geo.js"></script>
+<script src="icon-draw.js"></script>
+<script>document.body.appendChild(drawIcon(1024, 'ask'));</script>
+</body>
+</html>
