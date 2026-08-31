@@ -76,16 +76,6 @@ function drawIcon(size, variant) {
   landFill.addColorStop(0.70, '#8fae63');
   landFill.addColorStop(1.00, '#7ba45d');
 
-  ctx.save();
-  ctx.shadowColor = 'rgba(0,0,0,.6)';
-  ctx.shadowBlur = 30 * S;
-  ctx.shadowOffsetY = 10 * S;
-  ctx.fillStyle = landFill;
-  ctx.fill(path, 'evenodd');
-  ctx.restore();
-
-  // Gold rim, the app's accent, to crisp the coastline at small sizes. Drawn
-  // from the coastline, not the state rings, so interior borders stay unlined.
   var rim = new Path2D();
   outline.forEach(function (line) {
     line.forEach(function (p, j) {
@@ -93,27 +83,44 @@ function drawIcon(size, variant) {
       if (j === 0) rim.moveTo(x, y); else rim.lineTo(x, y);
     });
   });
-  ctx.save();
-  ctx.strokeStyle = '#e2b558';
-  ctx.lineWidth = Math.max(1, 6 * S);
-  ctx.lineJoin = 'round';
-  ctx.lineCap = 'round';
-  ctx.stroke(rim);
-  ctx.restore();
 
-  // A quiz mark parked in the Atlantic, where a real map has open ocean. Kept
-  // off the diagonal corner, since iOS masks the icon to a squircle.
+  // The land is built on its own layer so the question mark can be punched
+  // clean through it. Gold on the tan-and-green fill would barely register;
+  // a void that shows the night sky behind it reads at any size.
+  var layer = document.createElement('canvas');
+  layer.width = layer.height = size;
+  var lc = layer.getContext('2d');
+
+  lc.fillStyle = landFill;
+  lc.fill(path, 'evenodd');
+
+  // Gold rim, the app's accent, to crisp the coastline at small sizes. Drawn
+  // from the coastline, not the state rings, so interior borders stay unlined.
+  lc.strokeStyle = '#e2b558';
+  lc.lineWidth = Math.max(1, 6 * S);
+  lc.lineJoin = 'round';
+  lc.lineCap = 'round';
+  lc.stroke(rim);
+
   if (variant === 'ask') {
-    ctx.save();
-    ctx.fillStyle = '#e2b558';
-    ctx.font = '800 ' + Math.round(250 * S) + 'px system-ui, -apple-system, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'rgba(0,0,0,.65)';
-    ctx.shadowBlur = 24 * S;
-    ctx.fillText('?', size * 0.845, size * 0.815);
-    ctx.restore();
+    lc.save();
+    lc.globalCompositeOperation = 'destination-out';
+    lc.font = '900 ' + Math.round(405 * S) + 'px system-ui, -apple-system, sans-serif';
+    lc.textAlign = 'center';
+    lc.textBaseline = 'middle';
+    // Centred on the landmass rather than on the canvas: the bounding box runs
+    // out to Maine, which pulls its centre right of where the country looks
+    // centred.
+    lc.fillText('?', size * 0.515, size * 0.498);
+    lc.restore();
   }
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,.6)';
+  ctx.shadowBlur = 30 * S;
+  ctx.shadowOffsetY = 10 * S;
+  ctx.drawImage(layer, 0, 0);
+  ctx.restore();
 
   return c;
 }
